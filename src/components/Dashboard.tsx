@@ -1,4 +1,4 @@
-import { User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 import { Utensils, LogOut, Plus } from 'lucide-react'
 
 interface DashboardProps {
