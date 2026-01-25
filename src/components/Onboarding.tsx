@@ -27,6 +27,8 @@ interface FormData {
   gender: 'male' | 'female' | null
   weight: number | null
   height: number | null
+  heightFeet: number | null
+  heightInches: number | null
   unitSystem: 'metric' | 'imperial'
   activityLevel: ActivityLevel | null
   goal: Goal | null
@@ -41,6 +43,8 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
     gender: null,
     weight: null,
     height: null,
+    heightFeet: null,
+    heightInches: null,
     unitSystem: 'imperial',
     activityLevel: null,
     goal: null,
@@ -57,7 +61,11 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
       case 'basics':
         return formData.age !== null && formData.age > 0 && formData.gender !== null
       case 'body':
-        return formData.weight !== null && formData.weight > 0 && formData.height !== null && formData.height > 0
+        if (formData.weight === null || formData.weight <= 0) return false
+        if (formData.unitSystem === 'imperial') {
+          return formData.heightFeet !== null && formData.heightFeet >= 0
+        }
+        return formData.height !== null && formData.height > 0
       case 'activity':
         return formData.activityLevel !== null
       case 'goal':
@@ -82,8 +90,18 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
   }
 
   const handleComplete = async () => {
-    if (!formData.name || !formData.age || !formData.gender || !formData.weight || !formData.height || !formData.activityLevel || !formData.goal) {
+    if (!formData.name || !formData.age || !formData.gender || !formData.weight || !formData.activityLevel || !formData.goal) {
       return
+    }
+
+    // Calculate total height in inches for imperial
+    let heightValue: number
+    if (formData.unitSystem === 'imperial') {
+      if (formData.heightFeet === null) return
+      heightValue = (formData.heightFeet * 12) + (formData.heightInches || 0)
+    } else {
+      if (formData.height === null) return
+      heightValue = formData.height
     }
 
     setSaving(true)
@@ -93,8 +111,8 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
       ? convertWeight(formData.weight, 'lbs', 'kg')
       : formData.weight
     const heightCm = formData.unitSystem === 'imperial'
-      ? convertHeight(formData.height, 'in', 'cm')
-      : formData.height
+      ? convertHeight(heightValue, 'in', 'cm')
+      : heightValue
 
     const bmr = calculateBMR(weightKg, heightCm, formData.age, formData.gender)
     const tdee = calculateTDEE(bmr, formData.activityLevel)
@@ -108,7 +126,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
       age: formData.age,
       gender: formData.gender,
       weight: formData.weight,
-      height: formData.height,
+      height: heightValue,
       activity_level: formData.activityLevel,
       goal: formData.goal,
       unit_system: formData.unitSystem,
@@ -136,16 +154,25 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
   // Calculate preview values for summary
   const getPreviewValues = () => {
-    if (!formData.age || !formData.gender || !formData.weight || !formData.height || !formData.activityLevel || !formData.goal) {
+    if (!formData.age || !formData.gender || !formData.weight || !formData.activityLevel || !formData.goal) {
       return null
+    }
+
+    let heightValue: number
+    if (formData.unitSystem === 'imperial') {
+      if (formData.heightFeet === null) return null
+      heightValue = (formData.heightFeet * 12) + (formData.heightInches || 0)
+    } else {
+      if (formData.height === null) return null
+      heightValue = formData.height
     }
 
     const weightKg = formData.unitSystem === 'imperial'
       ? convertWeight(formData.weight, 'lbs', 'kg')
       : formData.weight
     const heightCm = formData.unitSystem === 'imperial'
-      ? convertHeight(formData.height, 'in', 'cm')
-      : formData.height
+      ? convertHeight(heightValue, 'in', 'cm')
+      : heightValue
 
     const bmr = calculateBMR(weightKg, heightCm, formData.age, formData.gender)
     const tdee = calculateTDEE(bmr, formData.activityLevel)
@@ -252,7 +279,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
                           : 'bg-zinc-800 border-zinc-700 text-gray-400'
                       }`}
                     >
-                      {unit === 'imperial' ? 'US (lbs, in)' : 'Metric (kg, cm)'}
+                      {unit === 'imperial' ? 'US (lbs, ft/in)' : 'Metric (kg, cm)'}
                     </button>
                   ))}
                 </div>
@@ -270,24 +297,53 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
                   step="0.1"
                 />
               </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">
-                  Height ({formData.unitSystem === 'imperial' ? 'inches' : 'cm'})
-                </label>
-                <input
-                  type="number"
-                  value={formData.height ?? ''}
-                  onChange={(e) => setFormData({ ...formData, height: e.target.value ? parseFloat(e.target.value) : null })}
-                  placeholder={`Enter height in ${formData.unitSystem === 'imperial' ? 'inches (e.g., 70)' : 'centimeters'}`}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
-                  step="0.1"
-                />
-                {formData.unitSystem === 'imperial' && formData.height && (
-                  <p className="text-gray-500 text-xs mt-1">
-                    {Math.floor(formData.height / 12)}'{Math.round(formData.height % 12)}"
-                  </p>
-                )}
-              </div>
+              {formData.unitSystem === 'imperial' ? (
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Height</label>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={formData.heightFeet ?? ''}
+                          onChange={(e) => setFormData({ ...formData, heightFeet: e.target.value ? parseInt(e.target.value) : null })}
+                          placeholder="5"
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 pr-10 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                          min={1}
+                          max={8}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">ft</span>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={formData.heightInches ?? ''}
+                          onChange={(e) => setFormData({ ...formData, heightInches: e.target.value ? parseInt(e.target.value) : null })}
+                          placeholder="10"
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 pr-10 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                          min={0}
+                          max={11}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">in</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Height (cm)</label>
+                  <input
+                    type="number"
+                    value={formData.height ?? ''}
+                    onChange={(e) => setFormData({ ...formData, height: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="Enter height in centimeters"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                    step="0.1"
+                  />
+                </div>
+              )}
             </div>
           </StepContent>
         )}

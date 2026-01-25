@@ -11,7 +11,7 @@ import './index.css'
 type AppState = 'loading' | 'login' | 'onboarding' | 'dashboard'
 
 function App() {
-  const { user, loading: authLoading, signInWithEmail, signOut } = useAuth()
+  const { user, loading: authLoading, signInWithEmail, signInWithGoogle, signOut } = useAuth()
   const [appState, setAppState] = useState<AppState>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
 
@@ -67,6 +67,11 @@ function App() {
     return result
   }
 
+  // Handle profile update from settings
+  const handleProfileUpdated = (updatedProfile: Profile) => {
+    setProfile(updatedProfile)
+  }
+
   // Show loading spinner while checking auth or profile
   if (authLoading || appState === 'loading') {
     return (
@@ -78,7 +83,7 @@ function App() {
 
   // Show login page if not authenticated
   if (appState === 'login' || !user) {
-    return <LoginPage onSignIn={signInWithEmail} />
+    return <LoginPage onSignIn={signInWithEmail} onSignInWithGoogle={signInWithGoogle} />
   }
 
   // Show onboarding if no profile
@@ -87,7 +92,7 @@ function App() {
   }
 
   // Show dashboard
-  return <Dashboard profile={profile} onSignOut={handleSignOut} />
+  return <Dashboard profile={profile} onSignOut={handleSignOut} onProfileUpdated={handleProfileUpdated} />
 }
 
 export default App
