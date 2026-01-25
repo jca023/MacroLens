@@ -19,17 +19,21 @@ MacroLens is an AI-powered nutrition tracking app using React, TypeScript, Supab
   - Bypass RLS for admin operations
   - Query table data
 
-### API Credentials (stored in .env and known to Claude):
+### API Credentials
+**NEVER commit actual tokens to git. Read from `.secrets.local` file (gitignored).**
+
 ```
 Project Ref: wnjxzotqieotjgxguynq
 Project URL: https://wnjxzotqieotjgxguynq.supabase.co
-Management API Token: sbp_e6bfd6bdb21146924200e185bedb17a77e646765
 ```
+
+Sensitive tokens are stored in `.secrets.local` (not committed to git).
 
 ### Example: Execute SQL via Management API
 ```bash
-curl -X POST "https://api.supabase.com/v1/projects/wnjxzotqieotjgxguynq/database/query" \
-  -H "Authorization: Bearer sbp_e6bfd6bdb21146924200e185bedb17a77e646765" \
+# Read token from .secrets.local, then:
+curl -X POST "https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query" \
+  -H "Authorization: Bearer $SUPABASE_MANAGEMENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"query": "SELECT * FROM profiles"}'
 ```
@@ -37,15 +41,21 @@ curl -X POST "https://api.supabase.com/v1/projects/wnjxzotqieotjgxguynq/database
 ### Example: Check/Update Auth Config
 ```bash
 # GET config
-curl "https://api.supabase.com/v1/projects/wnjxzotqieotjgxguynq/config/auth" \
-  -H "Authorization: Bearer sbp_e6bfd6bdb21146924200e185bedb17a77e646765"
+curl "https://api.supabase.com/v1/projects/{PROJECT_REF}/config/auth" \
+  -H "Authorization: Bearer $SUPABASE_MANAGEMENT_TOKEN"
 
 # PATCH config
-curl -X PATCH "https://api.supabase.com/v1/projects/wnjxzotqieotjgxguynq/config/auth" \
-  -H "Authorization: Bearer sbp_e6bfd6bdb21146924200e185bedb17a77e646765" \
+curl -X PATCH "https://api.supabase.com/v1/projects/{PROJECT_REF}/config/auth" \
+  -H "Authorization: Bearer $SUPABASE_MANAGEMENT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"site_url": "http://localhost:5173"}'
 ```
+
+## Security Rules
+
+1. **NEVER commit secrets to git** - Use `.secrets.local` file
+2. **Read secrets from local files only** - Check `.secrets.local` before API calls
+3. **Use placeholders in documentation** - Never put real tokens in CLAUDE.md or README
 
 ## Browser Testing
 
@@ -71,6 +81,7 @@ npm run test:browser  # Run Puppeteer browser tests
 - `src/hooks/useAuth.ts` - Authentication hook
 - `src/types/database.ts` - Database type definitions
 - `src/components/` - React components
+- `.secrets.local` - Local secrets (gitignored, not committed)
 
 ## Database Schema
 
