@@ -5,7 +5,7 @@ import { LandingPage } from './components/LandingPage'
 import { LoginPage } from './components/LoginPage'
 import { Dashboard } from './components/Dashboard'
 import { Onboarding } from './components/Onboarding'
-import { getProfile, createProfile } from './services/profileService'
+import { getProfile, upsertProfile } from './services/profileService'
 import type { Profile } from './types'
 import './index.css'
 
@@ -28,7 +28,17 @@ function App() {
 
       try {
         const existingProfile = await getProfile(user.id)
-        if (existingProfile) {
+        // Check if profile exists AND is complete (has required fields)
+        const isProfileComplete = existingProfile &&
+          existingProfile.name &&
+          existingProfile.age &&
+          existingProfile.gender &&
+          existingProfile.weight &&
+          existingProfile.height &&
+          existingProfile.activity_level &&
+          existingProfile.goal
+
+        if (isProfileComplete) {
           setProfile(existingProfile)
           setAppState('dashboard')
         } else {
@@ -48,7 +58,8 @@ function App() {
   // Handle onboarding completion
   const handleOnboardingComplete = async (profileData: Omit<Profile, 'created_at' | 'updated_at'>) => {
     try {
-      const newProfile = await createProfile({
+      // Use upsert since a partial profile row might already exist
+      const newProfile = await upsertProfile({
         ...profileData,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
