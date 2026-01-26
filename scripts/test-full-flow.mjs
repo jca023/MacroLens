@@ -1,13 +1,23 @@
 #!/usr/bin/env node
 /**
  * Full flow test - Login, Onboarding, Dashboard
+ *
+ * Required environment variables:
+ * - VITE_SUPABASE_URL
+ * - VITE_SUPABASE_ANON_KEY
  */
 
 import puppeteer from 'puppeteer'
+import { config } from 'dotenv'
+
+// Load environment variables from .env
+config()
 
 const BASE_URL = 'http://localhost:5173'
 const TEST_EMAIL = 'test@macrolens.local'
 const TEST_PASSWORD = 'TestPassword123!'
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
 
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -47,17 +57,14 @@ async function testFullFlow() {
     // ============ Step 2: Sign in via Supabase directly ============
     console.log('📱 Step 2: Signing in test user...')
 
-    const signInResult = await page.evaluate(async (email, password) => {
+    const signInResult = await page.evaluate(async (email, password, supabaseUrl, supabaseKey) => {
       const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
-      const supabase = createClient(
-        'https://wnjxzotqieotjgxguynq.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induanh6b3RxaWVvdGpneGd1eW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMyMTgsImV4cCI6MjA4MjY3OTIxOH0.xCT4QE6ZnjBP06EQ7llaQLk35B-uGQM6e5q0Myt3TCI'
-      )
+      const supabase = createClient(supabaseUrl, supabaseKey)
 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) return { error: error.message }
       return { success: true, userId: data.user?.id }
-    }, TEST_EMAIL, TEST_PASSWORD)
+    }, TEST_EMAIL, TEST_PASSWORD, SUPABASE_URL, SUPABASE_ANON_KEY)
 
     if (signInResult.error) {
       throw new Error(`Sign in failed: ${signInResult.error}`)

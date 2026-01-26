@@ -1,11 +1,23 @@
 #!/usr/bin/env node
 /**
  * Test meal logging flow
+ *
+ * Required environment variables:
+ * - VITE_SUPABASE_URL
+ * - VITE_SUPABASE_ANON_KEY
+ * - VITE_GEMINI_API_KEY
  */
 
 import puppeteer from 'puppeteer'
+import { config } from 'dotenv'
+
+// Load environment variables from .env
+config()
 
 const BASE_URL = 'http://localhost:5173'
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
+const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
 const TEST_EMAIL = 'test@macrolens.local'
 const TEST_PASSWORD = 'TestPassword123!'
 
@@ -30,16 +42,13 @@ async function testMealLogging() {
     await page.goto(BASE_URL, { waitUntil: 'networkidle0', timeout: 15000 })
 
     // Sign in via Supabase
-    const signInResult = await page.evaluate(async (email, password) => {
+    const signInResult = await page.evaluate(async (email, password, supabaseUrl, supabaseKey) => {
       const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
-      const supabase = createClient(
-        'https://wnjxzotqieotjgxguynq.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induanh6b3RxaWVvdGpneGd1eW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDMyMTgsImV4cCI6MjA4MjY3OTIxOH0.xCT4QE6ZnjBP06EQ7llaQLk35B-uGQM6e5q0Myt3TCI'
-      )
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) return { error: error.message }
       return { success: true }
-    }, TEST_EMAIL, TEST_PASSWORD)
+    }, TEST_EMAIL, TEST_PASSWORD, SUPABASE_URL, SUPABASE_ANON_KEY)
 
     if (signInResult.error) {
       throw new Error(`Sign in failed: ${signInResult.error}`)
@@ -111,10 +120,10 @@ async function testMealLogging() {
     // ============ Step 6: Test Gemini API connection ============
     console.log('📱 Step 6: Testing Gemini API connection...')
 
-    const geminiResult = await page.evaluate(async () => {
+    const geminiResult = await page.evaluate(async (apiKey) => {
       try {
         const { GoogleGenerativeAI } = await import('https://esm.sh/@google/generative-ai')
-        const genAI = new GoogleGenerativeAI('AIzaSyDuVS-6GoZMq1urjyNwzJkfKRiyyM1ciPA')
+        const genAI = new GoogleGenerativeAI(apiKey)
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
         const result = await model.generateContent('Say "OK" if you can read this.')
         const text = result.response.text()
@@ -122,7 +131,7 @@ async function testMealLogging() {
       } catch (error) {
         return { success: false, error: error.message }
       }
-    })
+    }, GEMINI_API_KEY)
 
     if (geminiResult.success) {
       console.log('   ✅ Gemini API connected and working\n')

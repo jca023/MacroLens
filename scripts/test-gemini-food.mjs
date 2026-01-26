@@ -1,6 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { config } from 'dotenv'
 
-const API_KEY = 'AIzaSyDuVS-6GoZMq1urjyNwzJkfKRiyyM1ciPA'
+// Load environment variables from .env
+config()
+
+const API_KEY = process.env.VITE_GEMINI_API_KEY
+if (!API_KEY) {
+  console.error('❌ VITE_GEMINI_API_KEY not found in environment')
+  process.exit(1)
+}
 const genAI = new GoogleGenerativeAI(API_KEY)
 
 async function testFoodAnalysis() {
