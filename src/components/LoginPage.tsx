@@ -171,7 +171,7 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
               {otpCode.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (otpInputRefs.current[index] = el)}
+                  ref={(el) => { otpInputRefs.current[index] = el }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -265,10 +265,10 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
                 {viewState === 'sending' ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>{authMode === 'otp' ? 'Sending code...' : 'Signing in...'}</span>
+                    <span>{authMode === 'otp' ? 'Sending...' : 'Signing in...'}</span>
                   </>
                 ) : (
-                  <span>{authMode === 'otp' ? 'Send Code' : 'Sign In'}</span>
+                  <span>{authMode === 'otp' ? "Let's Go!" : 'Sign In'}</span>
                 )}
               </button>
             </form>
