@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, User, Activity, Target, Scale, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, User, Activity, Target, Scale, Check, Utensils, Camera, Sparkles, TrendingUp } from 'lucide-react'
 import type { ActivityLevel, Goal, Profile } from '../types'
 import {
   calculateBMR,
@@ -17,9 +17,9 @@ interface OnboardingProps {
   onComplete: (profile: Omit<Profile, 'created_at' | 'updated_at'>) => Promise<void>
 }
 
-type Step = 'name' | 'basics' | 'body' | 'activity' | 'goal' | 'summary'
+type Step = 'welcome' | 'name' | 'basics' | 'body' | 'activity' | 'goal' | 'summary'
 
-const STEPS: Step[] = ['name', 'basics', 'body', 'activity', 'goal', 'summary']
+const STEPS: Step[] = ['welcome', 'name', 'basics', 'body', 'activity', 'goal', 'summary']
 
 interface FormData {
   name: string
@@ -35,7 +35,7 @@ interface FormData {
 }
 
 export function Onboarding({ userId, onComplete }: OnboardingProps) {
-  const [currentStep, setCurrentStep] = useState<Step>('name')
+  const [currentStep, setCurrentStep] = useState<Step>('welcome')
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -56,6 +56,8 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
   const canProceed = (): boolean => {
     switch (currentStep) {
+      case 'welcome':
+        return true
       case 'name':
         return formData.name.trim().length >= 2
       case 'basics':
@@ -201,6 +203,55 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
       {/* Content */}
       <div className="flex-1 flex flex-col p-6">
+        {currentStep === 'welcome' && (
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            {/* Logo */}
+            <div className="w-20 h-20 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
+              <Utensils size={40} className="text-emerald-500" />
+            </div>
+
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome to MacroLens</h1>
+            <p className="text-gray-400 mb-8">Your AI-powered nutrition companion</p>
+
+            {/* Feature highlights */}
+            <div className="w-full space-y-4 mb-8">
+              <div className="flex items-center gap-4 bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Camera size={20} className="text-emerald-500" />
+                </div>
+                <div className="text-left">
+                  <div className="text-white font-medium">Snap & Track</div>
+                  <div className="text-gray-500 text-sm">Take a photo of your food and we'll do the rest</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={20} className="text-emerald-500" />
+                </div>
+                <div className="text-left">
+                  <div className="text-white font-medium">AI-Powered Analysis</div>
+                  <div className="text-gray-500 text-sm">Get instant calories and macros with Gemini AI</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <TrendingUp size={20} className="text-emerald-500" />
+                </div>
+                <div className="text-left">
+                  <div className="text-white font-medium">Personalized Goals</div>
+                  <div className="text-gray-500 text-sm">Targets calculated from your BMR & TDEE</div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-gray-500 text-sm">
+              Let's set up your profile to calculate your personalized nutrition targets
+            </p>
+          </div>
+        )}
+
         {currentStep === 'name' && (
           <StepContent
             icon={<User size={32} />}
@@ -488,7 +539,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
             disabled={!canProceed()}
             className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-black font-semibold flex items-center justify-center gap-2"
           >
-            Continue
+            {currentStep === 'welcome' ? "Let's Go" : 'Continue'}
             <ChevronRight size={20} />
           </button>
         )}
