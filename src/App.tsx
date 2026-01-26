@@ -11,7 +11,7 @@ import './index.css'
 type AppState = 'loading' | 'login' | 'onboarding' | 'dashboard'
 
 function App() {
-  const { user, loading: authLoading, signInWithEmail, signInWithGoogle, signOut } = useAuth()
+  const { user, loading: authLoading, signInWithEmail, signOut } = useAuth()
   const [appState, setAppState] = useState<AppState>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
 
@@ -83,7 +83,7 @@ function App() {
 
   // Show login page if not authenticated
   if (appState === 'login' || !user) {
-    return <LoginPage onSignIn={signInWithEmail} onSignInWithGoogle={signInWithGoogle} />
+    return <LoginPage onSignIn={signInWithEmail} />
   }
 
   // Show onboarding if no profile
