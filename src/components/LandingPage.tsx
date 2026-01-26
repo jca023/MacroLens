@@ -60,9 +60,6 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           Get Started
           <ChevronRight size={24} />
         </button>
-        <p className="text-gray-600 text-xs mt-4 text-center">
-          Free to use. No credit card required.
-        </p>
       </div>
     </div>
   )
