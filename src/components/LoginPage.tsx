@@ -1,20 +1,31 @@
-import { useState } from 'react'
-import { Utensils, Mail, Lock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Utensils, Mail, Lock, Loader2, ArrowLeft } from 'lucide-react'
 
 interface LoginPageProps {
-  onSignInWithEmail: (email: string) => Promise<{ error: Error | null }>
   onSignInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>
+  onSendOtp: (email: string) => Promise<{ error: Error | null }>
+  onVerifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>
 }
 
-type ViewState = 'input' | 'sending' | 'sent'
-type AuthMode = 'magic-link' | 'password'
+type ViewState = 'input' | 'sending' | 'otp-sent' | 'verifying'
+type AuthMode = 'otp' | 'password'
 
-export function LoginPage({ onSignInWithEmail, onSignInWithPassword }: LoginPageProps) {
+export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
   const [viewState, setViewState] = useState<ViewState>('input')
-  const [authMode, setAuthMode] = useState<AuthMode>('password')
+  const [authMode, setAuthMode] = useState<AuthMode>('otp')
   const [error, setError] = useState<string | null>(null)
+
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // Focus first OTP input when entering OTP mode
+  useEffect(() => {
+    if (viewState === 'otp-sent') {
+      otpInputRefs.current[0]?.focus()
+    }
+  }, [viewState])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,38 +36,104 @@ export function LoginPage({ onSignInWithEmail, onSignInWithPassword }: LoginPage
       return
     }
 
-    if (authMode === 'password' && !password.trim()) {
-      setError('Please enter your password')
-      return
-    }
-
-    setViewState('sending')
-
-    if (authMode === 'magic-link') {
-      const { error: signInError } = await onSignInWithEmail(email)
-      if (signInError) {
-        setError(signInError.message)
-        setViewState('input')
-      } else {
-        setViewState('sent')
+    if (authMode === 'password') {
+      if (!password.trim()) {
+        setError('Please enter your password')
+        return
       }
-    } else {
+      setViewState('sending')
       const { error: signInError } = await onSignInWithPassword(email, password)
       if (signInError) {
         setError(signInError.message)
         setViewState('input')
       }
-      // If successful, the auth state change will handle navigation
+    } else {
+      // OTP mode - send code
+      setViewState('sending')
+      const { error: otpError } = await onSendOtp(email)
+      if (otpError) {
+        setError(otpError.message)
+        setViewState('input')
+      } else {
+        setViewState('otp-sent')
+        setOtpCode(['', '', '', '', '', ''])
+      }
     }
+  }
+
+  const handleOtpChange = (index: number, value: string) => {
+    // Only allow single digit
+    const digit = value.replace(/\D/g, '').slice(-1)
+
+    const newOtp = [...otpCode]
+    newOtp[index] = digit
+    setOtpCode(newOtp)
+
+    // Auto-advance to next input
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus()
+    }
+
+    // Auto-submit when all 6 digits entered
+    if (digit && index === 5) {
+      const fullCode = newOtp.join('')
+      if (fullCode.length === 6) {
+        handleVerifyOtp(fullCode)
+      }
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle backspace - move to previous input
+    if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pastedData.length === 6) {
+      const newOtp = pastedData.split('')
+      setOtpCode(newOtp)
+      handleVerifyOtp(pastedData)
+    }
+  }
+
+  const handleVerifyOtp = async (code: string) => {
+    setError(null)
+    setViewState('verifying')
+
+    const { error: verifyError } = await onVerifyOtp(email, code)
+    if (verifyError) {
+      setError(verifyError.message)
+      setViewState('otp-sent')
+      setOtpCode(['', '', '', '', '', ''])
+      otpInputRefs.current[0]?.focus()
+    }
+    // If successful, auth state change will handle navigation
   }
 
   const handleBack = () => {
     setViewState('input')
     setError(null)
+    setOtpCode(['', '', '', '', '', ''])
+  }
+
+  const handleResendCode = async () => {
+    setError(null)
+    setViewState('sending')
+    const { error: otpError } = await onSendOtp(email)
+    if (otpError) {
+      setError(otpError.message)
+    }
+    setViewState('otp-sent')
+    setOtpCode(['', '', '', '', '', ''])
+    otpInputRefs.current[0]?.focus()
   }
 
   const toggleAuthMode = () => {
-    setAuthMode(authMode === 'magic-link' ? 'password' : 'magic-link')
+    setAuthMode(authMode === 'otp' ? 'password' : 'otp')
     setError(null)
     setPassword('')
   }
@@ -72,35 +149,73 @@ export function LoginPage({ onSignInWithEmail, onSignInWithPassword }: LoginPage
 
       {/* Card */}
       <div className="w-full max-w-sm bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
-        {viewState === 'sent' ? (
-          // Magic link sent state
-          <div className="text-center">
-            <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={24} className="text-emerald-500" />
-            </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Check your email</h2>
-            <p className="text-gray-400 text-sm mb-4">
-              We sent a magic link to<br />
-              <span className="text-white font-medium">{email}</span>
-            </p>
-            <p className="text-gray-500 text-xs mb-6">
-              Click the link in the email to sign in. No password needed!
-            </p>
+        {viewState === 'otp-sent' || viewState === 'verifying' ? (
+          // OTP code entry state
+          <div>
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mx-auto"
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
             >
               <ArrowLeft size={16} />
-              <span>Use a different email</span>
+              <span>Back</span>
             </button>
+
+            <h2 className="text-xl font-semibold text-white mb-2">Enter code</h2>
+            <p className="text-gray-400 text-sm mb-6">
+              We sent a 6-digit code to<br />
+              <span className="text-white font-medium">{email}</span>
+            </p>
+
+            {/* OTP Input Boxes */}
+            <div className="flex gap-2 justify-center mb-4" onPaste={handleOtpPaste}>
+              {otpCode.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => (otpInputRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  disabled={viewState === 'verifying'}
+                  className="w-12 h-14 bg-zinc-800 border border-zinc-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                />
+              ))}
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <p className="text-red-400 text-sm mb-4 text-center">{error}</p>
+            )}
+
+            {/* Verifying indicator */}
+            {viewState === 'verifying' && (
+              <div className="flex items-center justify-center gap-2 text-gray-400 mb-4">
+                <Loader2 size={18} className="animate-spin" />
+                <span>Verifying...</span>
+              </div>
+            )}
+
+            {/* Resend code */}
+            <div className="text-center">
+              <p className="text-gray-500 text-sm mb-2">Didn't receive the code?</p>
+              <button
+                onClick={handleResendCode}
+                disabled={viewState === 'verifying'}
+                className="text-emerald-500 hover:text-emerald-400 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Resend code
+              </button>
+            </div>
           </div>
         ) : (
           // Input state
           <>
             <h2 className="text-xl font-semibold text-white mb-1">Sign in</h2>
             <p className="text-gray-400 text-sm mb-6">
-              {authMode === 'magic-link'
-                ? 'Enter your email to receive a magic link'
+              {authMode === 'otp'
+                ? 'Enter your email to receive a code'
                 : 'Enter your email and password'}
             </p>
 
@@ -150,10 +265,10 @@ export function LoginPage({ onSignInWithEmail, onSignInWithPassword }: LoginPage
                 {viewState === 'sending' ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>{authMode === 'magic-link' ? 'Sending...' : 'Signing in...'}</span>
+                    <span>{authMode === 'otp' ? 'Sending code...' : 'Signing in...'}</span>
                   </>
                 ) : (
-                  <span>{authMode === 'magic-link' ? 'Send Magic Link' : 'Sign In'}</span>
+                  <span>{authMode === 'otp' ? 'Send Code' : 'Sign In'}</span>
                 )}
               </button>
             </form>
@@ -164,9 +279,9 @@ export function LoginPage({ onSignInWithEmail, onSignInWithPassword }: LoginPage
                 onClick={toggleAuthMode}
                 className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
               >
-                {authMode === 'magic-link'
+                {authMode === 'otp'
                   ? 'Sign in with password instead'
-                  : 'Sign in with magic link instead'}
+                  : 'Sign in with email code instead'}
               </button>
             </div>
           </>
@@ -175,8 +290,8 @@ export function LoginPage({ onSignInWithEmail, onSignInWithPassword }: LoginPage
 
       {/* Footer */}
       <p className="text-gray-600 text-xs mt-6 text-center">
-        {authMode === 'magic-link'
-          ? 'Sign in securely with magic link'
+        {authMode === 'otp'
+          ? 'Sign in securely with a one-time code'
           : 'Sign in with your account'}
       </p>
     </div>

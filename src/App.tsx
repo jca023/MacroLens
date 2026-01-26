@@ -12,7 +12,7 @@ import './index.css'
 type AppState = 'loading' | 'landing' | 'login' | 'onboarding' | 'dashboard'
 
 function App() {
-  const { user, loading: authLoading, signInWithEmail, signInWithPassword, signOut } = useAuth()
+  const { user, loading: authLoading, sendOtp, verifyOtp, signInWithPassword, signOut } = useAuth()
   const [appState, setAppState] = useState<AppState>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
 
@@ -97,8 +97,9 @@ function App() {
   if (appState === 'login' && !user) {
     return (
       <LoginPage
-        onSignInWithEmail={signInWithEmail}
         onSignInWithPassword={signInWithPassword}
+        onSendOtp={sendOtp}
+        onVerifyOtp={verifyOtp}
       />
     )
   }

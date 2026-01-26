@@ -39,7 +39,28 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Sign in with magic link (passwordless email)
+  // Send OTP code to email (6-digit code)
+  const sendOtp = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+      },
+    })
+    return { error }
+  }
+
+  // Verify OTP code and sign in
+  const verifyOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    })
+    return { error }
+  }
+
+  // Sign in with magic link (passwordless email) - kept for backwards compatibility
   const signInWithEmail = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -80,6 +101,8 @@ export function useAuth() {
     user: authState.user,
     session: authState.session,
     loading: authState.loading,
+    sendOtp,
+    verifyOtp,
     signInWithEmail,
     signInWithPassword,
     signInWithGoogle,
