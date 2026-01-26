@@ -50,6 +50,15 @@ export function useAuth() {
     return { error }
   }
 
+  // Sign in with email and password
+  const signInWithPassword = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    return { error }
+  }
+
   // Sign in with Google OAuth
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -72,6 +81,7 @@ export function useAuth() {
     session: authState.session,
     loading: authState.loading,
     signInWithEmail,
+    signInWithPassword,
     signInWithGoogle,
     signOut,
   }

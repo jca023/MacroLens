@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
+import { LandingPage } from './components/LandingPage'
 import { LoginPage } from './components/LoginPage'
 import { Dashboard } from './components/Dashboard'
 import { Onboarding } from './components/Onboarding'
@@ -8,10 +9,10 @@ import { getProfile, createProfile } from './services/profileService'
 import type { Profile } from './types'
 import './index.css'
 
-type AppState = 'loading' | 'login' | 'onboarding' | 'dashboard'
+type AppState = 'loading' | 'landing' | 'login' | 'onboarding' | 'dashboard'
 
 function App() {
-  const { user, loading: authLoading, signInWithEmail, signOut } = useAuth()
+  const { user, loading: authLoading, signInWithEmail, signInWithPassword, signOut } = useAuth()
   const [appState, setAppState] = useState<AppState>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
 
@@ -19,7 +20,8 @@ function App() {
   useEffect(() => {
     async function checkProfile() {
       if (!user) {
-        setAppState('login')
+        // Show landing page for non-authenticated users
+        setAppState('landing')
         setProfile(null)
         return
       }
@@ -63,13 +65,18 @@ function App() {
   const handleSignOut = async () => {
     const result = await signOut()
     setProfile(null)
-    setAppState('login')
+    setAppState('landing')
     return result
   }
 
   // Handle profile update from settings
   const handleProfileUpdated = (updatedProfile: Profile) => {
     setProfile(updatedProfile)
+  }
+
+  // Navigate from landing to login
+  const handleGetStarted = () => {
+    setAppState('login')
   }
 
   // Show loading spinner while checking auth or profile
@@ -81,13 +88,23 @@ function App() {
     )
   }
 
-  // Show login page if not authenticated
-  if (appState === 'login' || !user) {
-    return <LoginPage onSignIn={signInWithEmail} />
+  // Show landing page for non-authenticated users (first visit)
+  if (appState === 'landing' && !user) {
+    return <LandingPage onGetStarted={handleGetStarted} />
+  }
+
+  // Show login page
+  if (appState === 'login' && !user) {
+    return (
+      <LoginPage
+        onSignInWithEmail={signInWithEmail}
+        onSignInWithPassword={signInWithPassword}
+      />
+    )
   }
 
   // Show onboarding if no profile
-  if (appState === 'onboarding') {
+  if (appState === 'onboarding' && user) {
     return <Onboarding userId={user.id} onComplete={handleOnboardingComplete} />
   }
 
