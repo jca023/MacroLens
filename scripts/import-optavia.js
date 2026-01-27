@@ -1,5 +1,35 @@
 // Script to import Optavia products into Supabase food_library table
 // Run with: node scripts/import-optavia.js
+//
+// Requires: .secrets.local file with SUPABASE_SECRET_KEY
+
+const fs = require('fs');
+const path = require('path');
+
+// Load secrets from .secrets.local
+function loadSecrets() {
+  const secretsPath = path.join(__dirname, '..', '.secrets.local');
+  if (!fs.existsSync(secretsPath)) {
+    console.error('Error: .secrets.local file not found');
+    console.error('Please create .secrets.local with SUPABASE_SECRET_KEY');
+    process.exit(1);
+  }
+
+  const content = fs.readFileSync(secretsPath, 'utf-8');
+  const secrets = {};
+
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const [key, ...valueParts] = trimmed.split('=');
+    if (key && valueParts.length > 0) {
+      secrets[key.trim()] = valueParts.join('=').trim();
+    }
+  }
+
+  return secrets;
+}
 
 const optaviaProducts = [
   // Bar Fuelings
@@ -123,15 +153,23 @@ const normalizedProducts = optaviaProducts.map(p => ({
 
 // Import using Supabase REST API
 async function importProducts() {
+  const secrets = loadSecrets();
   const SUPABASE_URL = 'https://wnjxzotqieotjgxguynq.supabase.co';
-  const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induanh6b3RxaWVvdGpneGd1eW5xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzEwMzIxOCwiZXhwIjoyMDgyNjc5MjE4fQ.3gOc4mRb6il6ccGmj4OL1qP9Cl-NxhYivMAhgl5sqPU';
+  const SECRET_KEY = secrets.SUPABASE_SECRET_KEY;
+
+  if (!SECRET_KEY) {
+    console.error('Error: SUPABASE_SECRET_KEY not found in .secrets.local');
+    process.exit(1);
+  }
+
+  console.log('Using secret key from .secrets.local...');
 
   const response = await fetch(`${SUPABASE_URL}/rest/v1/food_library`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SERVICE_ROLE_KEY,
-      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SECRET_KEY,
+      'Authorization': `Bearer ${SECRET_KEY}`,
       'Prefer': 'return=minimal'
     },
     body: JSON.stringify(normalizedProducts)

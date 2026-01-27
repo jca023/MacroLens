@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react'
-import { X, Camera, Upload, Loader2, Check, AlertCircle, Trash2, MessageSquare } from 'lucide-react'
+import { X, Camera, Upload, Loader2, Check, AlertCircle, Trash2, MessageSquare, ScanBarcode } from 'lucide-react'
 import { analyzeFoodImage, analyzeFoodText, type FoodItem } from '../services/geminiService'
 import { createMeal } from '../services/mealService'
+import { findByBarcode } from '../services/foodLibraryService'
+import { BarcodeScanner } from './BarcodeScanner'
 import type { MealInsert } from '../types'
 
 interface MealLoggerProps {
@@ -10,8 +12,8 @@ interface MealLoggerProps {
   onMealLogged: () => void
 }
 
-type Step = 'capture' | 'text-input' | 'analyzing' | 'review' | 'saving' | 'error'
-type InputMode = 'photo' | 'text'
+type Step = 'capture' | 'text-input' | 'barcode-scan' | 'analyzing' | 'review' | 'saving' | 'error'
+type InputMode = 'photo' | 'text' | 'barcode'
 
 export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
   const [step, setStep] = useState<Step>('capture')
@@ -169,6 +171,42 @@ export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
     setError(null)
   }
 
+  const handleBarcodeScanned = async (barcode: string) => {
+    setStep('analyzing')
+    setInputMode('barcode')
+    setError(null)
+
+    try {
+      const product = await findByBarcode(barcode)
+
+      if (!product) {
+        setError(`No product found for barcode: ${barcode}`)
+        setStep('error')
+        return
+      }
+
+      const item: FoodItem = {
+        name: product.product_name,
+        quantity: '1 serving',
+        calories: product.calories || 0,
+        protein: product.protein || 0,
+        carbs: product.carbs || 0,
+        fat: product.fat || 0,
+        confidence: 'high',
+        verified: true,
+        brand: product.brand,
+        source: 'food_library'
+      }
+
+      setFoodItems([item])
+      setMealName(product.product_name)
+      setStep('review')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to lookup barcode')
+      setStep('error')
+    }
+  }
+
   const totals = calculateTotals()
 
   return (
@@ -214,6 +252,14 @@ export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
                 <Upload size={32} className="text-emerald-500" />
                 <span className="text-white font-medium">Upload</span>
               </button>
+
+              <button
+                onClick={() => setStep('barcode-scan')}
+                className="flex flex-col items-center gap-2 p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-emerald-500/50 transition-colors"
+              >
+                <ScanBarcode size={32} className="text-emerald-500" />
+                <span className="text-white font-medium">Barcode</span>
+              </button>
             </div>
 
             <div className="w-full max-w-sm">
@@ -251,6 +297,14 @@ export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
               className="hidden"
             />
           </div>
+        )}
+
+        {/* Barcode Scan Step */}
+        {step === 'barcode-scan' && (
+          <BarcodeScanner
+            onScan={handleBarcodeScanned}
+            onClose={() => setStep('capture')}
+          />
         )}
 
         {/* Text Input Step */}
