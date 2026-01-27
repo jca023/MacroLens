@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { matchToVerifiedProduct } from './foodLibraryService'
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
@@ -16,6 +17,10 @@ export interface FoodItem {
   carbs: number
   fat: number
   confidence: 'high' | 'medium' | 'low'
+  // Fields for verified products from food library
+  verified?: boolean
+  brand?: string
+  source?: 'ai' | 'food_library'
 }
 
 export interface FoodAnalysisResult {
@@ -31,8 +36,10 @@ export interface FoodAnalysisResult {
 
 const FOOD_ANALYSIS_PROMPT = `You are a nutrition expert analyzing a food image. Identify all food items visible and estimate their nutritional content.
 
+IMPORTANT: If you see any OPTAVIA, OPTAVIA ACTIVE, OPTAVIA ASCEND, or Essential1 products, include the brand and exact product name in your response. We have verified nutritional data for these products.
+
 For each food item, provide:
-1. Name of the food
+1. Name of the food (include brand name if visible, e.g., "OPTAVIA Chocolate Mint Cookie Crisp Bar")
 2. Estimated quantity/portion size
 3. Estimated calories
 4. Protein (grams)
@@ -102,7 +109,10 @@ export async function analyzeFoodImage(imageBase64: string, mimeType: string = '
     }
 
     const parsed = JSON.parse(jsonStr.trim())
-    const items: FoodItem[] = parsed.items || []
+    const rawItems: FoodItem[] = parsed.items || []
+
+    // Enrich items with verified data from food library
+    const items = await enrichWithVerifiedData(rawItems)
 
     // Calculate totals
     const totals = items.reduce(
@@ -141,8 +151,10 @@ export async function analyzeFoodImage(imageBase64: string, mimeType: string = '
 
 const TEXT_ANALYSIS_PROMPT = `You are a nutrition expert. The user will describe food they ate. Analyze the description and estimate nutritional content.
 
+IMPORTANT: If the user mentions OPTAVIA, OPTAVIA ACTIVE, OPTAVIA ASCEND, or Essential1 products, include the brand and product name. We have verified nutritional data for these products.
+
 For each food item mentioned, provide:
-1. Name of the food
+1. Name of the food (include brand if mentioned, e.g., "OPTAVIA Creamy Chocolate Shake Mix")
 2. Estimated quantity/portion size
 3. Estimated calories
 4. Protein (grams)
@@ -214,7 +226,10 @@ export async function analyzeFoodText(description: string): Promise<FoodAnalysis
     }
 
     const parsed = JSON.parse(jsonStr.trim())
-    const items: FoodItem[] = parsed.items || []
+    const rawItems: FoodItem[] = parsed.items || []
+
+    // Enrich items with verified data from food library
+    const items = await enrichWithVerifiedData(rawItems)
 
     // Calculate totals
     const totals = items.reduce(
@@ -249,6 +264,54 @@ export async function analyzeFoodText(description: string): Promise<FoodAnalysis
       error: error instanceof Error ? error.message : 'Failed to analyze food'
     }
   }
+}
+
+/**
+ * Enrich AI-detected food items with verified data from the food library
+ * If a match is found, replaces AI estimates with verified nutritional data
+ */
+async function enrichWithVerifiedData(items: FoodItem[]): Promise<FoodItem[]> {
+  const enrichedItems: FoodItem[] = []
+
+  for (const item of items) {
+    try {
+      // Try to match to a verified product in our food library
+      const verifiedProduct = await matchToVerifiedProduct(item.name)
+
+      if (verifiedProduct && verifiedProduct.calories !== null) {
+        // Found a verified match - use verified data
+        enrichedItems.push({
+          name: verifiedProduct.product_name,
+          quantity: item.quantity,
+          calories: verifiedProduct.calories,
+          protein: verifiedProduct.protein || 0,
+          carbs: verifiedProduct.carbs || 0,
+          fat: verifiedProduct.fat || 0,
+          confidence: 'high', // Verified data is always high confidence
+          verified: true,
+          brand: verifiedProduct.brand,
+          source: 'food_library'
+        })
+      } else {
+        // No match found - use AI estimate
+        enrichedItems.push({
+          ...item,
+          verified: false,
+          source: 'ai'
+        })
+      }
+    } catch (error) {
+      // If lookup fails, fall back to AI estimate
+      console.error('Error looking up verified product:', error)
+      enrichedItems.push({
+        ...item,
+        verified: false,
+        source: 'ai'
+      })
+    }
+  }
+
+  return enrichedItems
 }
 
 export async function testGeminiConnection(): Promise<boolean> {
