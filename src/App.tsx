@@ -5,11 +5,13 @@ import { LandingPage } from './components/LandingPage'
 import { LoginPage } from './components/LoginPage'
 import { Dashboard } from './components/Dashboard'
 import { Onboarding } from './components/Onboarding'
+import { TermsOfService } from './components/TermsOfService'
+import { PrivacyPolicy } from './components/PrivacyPolicy'
 import { getProfile, upsertProfile } from './services/profileService'
 import type { Profile } from './types'
 import './index.css'
 
-type AppState = 'loading' | 'landing' | 'login' | 'onboarding' | 'dashboard'
+type AppState = 'loading' | 'landing' | 'login' | 'onboarding' | 'dashboard' | 'terms' | 'privacy'
 
 function App() {
   const { user, loading: authLoading, sendOtp, verifyOtp, signInWithPassword, signOut } = useAuth()
@@ -90,6 +92,21 @@ function App() {
     setAppState('login')
   }
 
+  // Navigate to Terms of Service
+  const handleTerms = () => {
+    setAppState('terms')
+  }
+
+  // Navigate to Privacy Policy
+  const handlePrivacy = () => {
+    setAppState('privacy')
+  }
+
+  // Navigate back to landing from legal pages
+  const handleBackToLanding = () => {
+    setAppState('landing')
+  }
+
   // Show loading spinner while checking auth or profile
   if (authLoading || appState === 'loading') {
     return (
@@ -99,9 +116,25 @@ function App() {
     )
   }
 
+  // Show Terms of Service
+  if (appState === 'terms') {
+    return <TermsOfService onBack={handleBackToLanding} />
+  }
+
+  // Show Privacy Policy
+  if (appState === 'privacy') {
+    return <PrivacyPolicy onBack={handleBackToLanding} />
+  }
+
   // Show landing page for non-authenticated users (first visit)
   if (appState === 'landing' && !user) {
-    return <LandingPage onGetStarted={handleGetStarted} />
+    return (
+      <LandingPage
+        onGetStarted={handleGetStarted}
+        onTerms={handleTerms}
+        onPrivacy={handlePrivacy}
+      />
+    )
   }
 
   // Show login page

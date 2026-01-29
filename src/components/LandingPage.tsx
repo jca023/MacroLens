@@ -2,9 +2,11 @@ import { Utensils, Camera, Sparkles, TrendingUp, ChevronRight } from 'lucide-rea
 
 interface LandingPageProps {
   onGetStarted: () => void
+  onTerms: () => void
+  onPrivacy: () => void
 }
 
-export function LandingPage({ onGetStarted }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onTerms, onPrivacy }: LandingPageProps) {
   return (
     <div className="min-h-dvh bg-black flex flex-col">
       {/* Hero Section */}
@@ -52,7 +54,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </div>
 
       {/* CTA Button */}
-      <div className="p-6 pb-10">
+      <div className="p-6 pb-4">
         <button
           onClick={onGetStarted}
           className="w-full max-w-sm mx-auto bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-lg"
@@ -60,6 +62,26 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           Get Started
           <ChevronRight size={24} />
         </button>
+      </div>
+
+      {/* Footer Links */}
+      <div className="p-4 pb-8 text-center">
+        <p className="text-gray-500 text-sm">
+          By continuing, you agree to our{' '}
+          <button
+            onClick={onTerms}
+            className="text-gray-400 hover:text-emerald-500 underline underline-offset-2 transition-colors"
+          >
+            Terms of Service
+          </button>
+          {' '}and{' '}
+          <button
+            onClick={onPrivacy}
+            className="text-gray-400 hover:text-emerald-500 underline underline-offset-2 transition-colors"
+          >
+            Privacy Policy
+          </button>
+        </p>
       </div>
     </div>
   )
