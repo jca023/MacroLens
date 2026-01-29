@@ -3,6 +3,50 @@
 ## Project Overview
 MacroLens is an AI-powered nutrition tracking app using React, TypeScript, Supabase, and Google Gemini.
 
+## API Credentials - READ THIS FIRST
+
+**All API tokens are stored in `.secrets.local`** (gitignored, never committed).
+
+Before asking the user for credentials, ALWAYS check `.secrets.local` first:
+```bash
+cat .secrets.local
+```
+
+### Services with Claude API Access:
+| Service | Token Variable | What Claude Can Do |
+|---------|---------------|-------------------|
+| Supabase | `SUPABASE_MANAGEMENT_TOKEN` | Manage auth, execute SQL, update settings |
+| Supabase | `SUPABASE_SERVICE_ROLE_KEY` | Admin CRUD operations (bypasses RLS) |
+| Railway | `RAILWAY_TOKEN` | Deploy, add domains, manage services |
+| Resend | `RESEND_API_KEY` | Send emails (to be configured) |
+
+### If a token is missing:
+1. Ask user to provide the token
+2. Add it to `.secrets.local` with clear comments
+3. Document the token in this table
+
+---
+
+## Railway Operations
+
+### Using Railway CLI with stored token:
+```bash
+# Set token from .secrets.local and run commands
+export RAILWAY_TOKEN=$(grep RAILWAY_TOKEN .secrets.local | cut -d= -f2)
+npx @railway/cli whoami
+npx @railway/cli domain add macrolens.app
+```
+
+### Common Railway Commands:
+```bash
+npx @railway/cli status          # Check deployment status
+npx @railway/cli logs            # View logs
+npx @railway/cli domain          # List/add custom domains
+npx @railway/cli variables       # Manage environment variables
+```
+
+---
+
 ## Supabase Operations - IMPORTANT
 
 **Before asking the user to do anything in Supabase, research if you can do it programmatically first.**
