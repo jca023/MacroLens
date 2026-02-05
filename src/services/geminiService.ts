@@ -12,10 +12,18 @@ const genAI = new GoogleGenerativeAI(API_KEY || '')
 export interface FoodItem {
   name: string
   quantity: string
+  // Base values (AI estimate for 1x portion - don't change when adjusting portion)
+  baseCalories: number
+  baseProtein: number
+  baseCarbs: number
+  baseFat: number
+  // Displayed values (base * portionMultiplier)
   calories: number
   protein: number
   carbs: number
   fat: number
+  // Portion adjustment
+  portionMultiplier: number
   confidence: 'high' | 'medium' | 'low'
   // Fields for verified products from food library
   verified?: boolean
@@ -36,11 +44,18 @@ export interface FoodAnalysisResult {
 
 const FOOD_ANALYSIS_PROMPT = `You are a nutrition expert analyzing a food image. Identify all food items visible and estimate their nutritional content.
 
+IMPORTANT PORTION GUIDANCE:
+- Photos lack scale reference, so estimate portions CONSERVATIVELY (lean toward smaller estimates)
+- Include estimated weight in grams when possible (e.g., "1 medium chicken breast (~140g)")
+- Use standard USDA serving sizes as your baseline when uncertain
+- For packaged foods, assume 1 standard serving unless clearly more or less
+- Common reference: palm of hand ≈ 3oz meat, fist ≈ 1 cup, thumb ≈ 1 tbsp
+
 IMPORTANT: If you see any OPTAVIA, OPTAVIA ACTIVE, OPTAVIA ASCEND, or Essential1 products, include the brand and exact product name in your response. We have verified nutritional data for these products.
 
 For each food item, provide:
 1. Name of the food (include brand name if visible, e.g., "OPTAVIA Chocolate Mint Cookie Crisp Bar")
-2. Estimated quantity/portion size
+2. Estimated quantity/portion size with weight in grams when possible
 3. Estimated calories
 4. Protein (grams)
 5. Carbohydrates (grams)
@@ -52,7 +67,7 @@ Respond ONLY with valid JSON in this exact format:
   "items": [
     {
       "name": "Food name",
-      "quantity": "1 cup / 100g / 1 piece etc",
+      "quantity": "1 cup (~150g) / 4 oz (~113g) / 1 medium piece (~100g)",
       "calories": 200,
       "protein": 10,
       "carbs": 25,
@@ -67,9 +82,7 @@ If no food is detected in the image, respond with:
 {
   "items": [],
   "description": "No food detected in image"
-}
-
-Be conservative with estimates. Use standard serving sizes when portions are unclear.`
+}`
 
 export async function analyzeFoodImage(imageBase64: string, mimeType: string = 'image/jpeg'): Promise<FoodAnalysisResult> {
   if (!API_KEY) {
@@ -151,11 +164,17 @@ export async function analyzeFoodImage(imageBase64: string, mimeType: string = '
 
 const TEXT_ANALYSIS_PROMPT = `You are a nutrition expert. The user will describe food they ate. Analyze the description and estimate nutritional content.
 
+IMPORTANT PORTION GUIDANCE:
+- Estimate portions CONSERVATIVELY when not specified
+- Use standard USDA serving sizes as your baseline
+- If user says "some" or doesn't specify amount, use a single standard serving
+- Include estimated weight in grams when possible (e.g., "1 medium chicken breast (~140g)")
+
 IMPORTANT: If the user mentions OPTAVIA, OPTAVIA ACTIVE, OPTAVIA ASCEND, or Essential1 products, include the brand and product name. We have verified nutritional data for these products.
 
 For each food item mentioned, provide:
 1. Name of the food (include brand if mentioned, e.g., "OPTAVIA Creamy Chocolate Shake Mix")
-2. Estimated quantity/portion size
+2. Estimated quantity/portion size with weight in grams when possible
 3. Estimated calories
 4. Protein (grams)
 5. Carbohydrates (grams)
@@ -167,7 +186,7 @@ Respond ONLY with valid JSON in this exact format:
   "items": [
     {
       "name": "Food name",
-      "quantity": "1 cup / 100g / 1 piece etc",
+      "quantity": "1 cup (~150g) / 4 oz (~113g) / 1 medium piece (~100g)",
       "calories": 200,
       "protein": 10,
       "carbs": 25,
@@ -176,9 +195,7 @@ Respond ONLY with valid JSON in this exact format:
     }
   ],
   "description": "Brief description of the meal"
-}
-
-Be conservative with estimates. Use standard serving sizes when portions are unclear.`
+}`
 
 export async function analyzeFoodText(description: string): Promise<FoodAnalysisResult> {
   if (!API_KEY) {
@@ -267,47 +284,71 @@ export async function analyzeFoodText(description: string): Promise<FoodAnalysis
 }
 
 /**
+ * Convert raw Gemini response items to FoodItem with base values
+ */
+function initializeFoodItem(raw: { name: string; quantity: string; calories: number; protein: number; carbs: number; fat: number; confidence: 'high' | 'medium' | 'low' }): FoodItem {
+  return {
+    name: raw.name,
+    quantity: raw.quantity,
+    baseCalories: raw.calories || 0,
+    baseProtein: raw.protein || 0,
+    baseCarbs: raw.carbs || 0,
+    baseFat: raw.fat || 0,
+    calories: raw.calories || 0,
+    protein: raw.protein || 0,
+    carbs: raw.carbs || 0,
+    fat: raw.fat || 0,
+    portionMultiplier: 1.0,
+    confidence: raw.confidence || 'medium',
+    verified: false,
+    source: 'ai'
+  }
+}
+
+/**
  * Enrich AI-detected food items with verified data from the food library
  * If a match is found, replaces AI estimates with verified nutritional data
  */
-async function enrichWithVerifiedData(items: FoodItem[]): Promise<FoodItem[]> {
+async function enrichWithVerifiedData(rawItems: Array<{ name: string; quantity: string; calories: number; protein: number; carbs: number; fat: number; confidence: 'high' | 'medium' | 'low' }>): Promise<FoodItem[]> {
   const enrichedItems: FoodItem[] = []
 
-  for (const item of items) {
+  for (const rawItem of rawItems) {
     try {
       // Try to match to a verified product in our food library
-      const verifiedProduct = await matchToVerifiedProduct(item.name)
+      const verifiedProduct = await matchToVerifiedProduct(rawItem.name)
 
       if (verifiedProduct && verifiedProduct.calories !== null) {
         // Found a verified match - use verified data
+        const calories = verifiedProduct.calories
+        const protein = verifiedProduct.protein || 0
+        const carbs = verifiedProduct.carbs || 0
+        const fat = verifiedProduct.fat || 0
+
         enrichedItems.push({
           name: verifiedProduct.product_name,
-          quantity: item.quantity,
-          calories: verifiedProduct.calories,
-          protein: verifiedProduct.protein || 0,
-          carbs: verifiedProduct.carbs || 0,
-          fat: verifiedProduct.fat || 0,
+          quantity: rawItem.quantity,
+          baseCalories: calories,
+          baseProtein: protein,
+          baseCarbs: carbs,
+          baseFat: fat,
+          calories,
+          protein,
+          carbs,
+          fat,
+          portionMultiplier: 1.0,
           confidence: 'high', // Verified data is always high confidence
           verified: true,
           brand: verifiedProduct.brand,
           source: 'food_library'
         })
       } else {
-        // No match found - use AI estimate
-        enrichedItems.push({
-          ...item,
-          verified: false,
-          source: 'ai'
-        })
+        // No match found - use AI estimate with base values
+        enrichedItems.push(initializeFoodItem(rawItem))
       }
     } catch (error) {
       // If lookup fails, fall back to AI estimate
       console.error('Error looking up verified product:', error)
-      enrichedItems.push({
-        ...item,
-        verified: false,
-        source: 'ai'
-      })
+      enrichedItems.push(initializeFoodItem(rawItem))
     }
   }
 
@@ -325,5 +366,131 @@ export async function testGeminiConnection(): Promise<boolean> {
   } catch (error) {
     console.error('Gemini connection test failed:', error)
     return false
+  }
+}
+
+// ============================================
+// Scale Photo Analysis
+// ============================================
+
+export interface ScaleAnalysisResult {
+  success: boolean
+  weight: number | null
+  unit: 'lbs' | 'kg' | null
+  confidence: 'high' | 'medium' | 'low'
+  scaleType: 'digital' | 'analog' | 'unknown'
+  rawReading: string | null
+  error?: string
+}
+
+const SCALE_ANALYSIS_PROMPT = `You are analyzing a photo of a bathroom scale to read the weight displayed.
+
+SCALE TYPES YOU MAY ENCOUNTER:
+1. **Digital scales** - LCD or LED displays showing numbers
+   - Look for the main numeric display
+   - May have decimal points (e.g., 185.4)
+   - May show units (lbs, kg, st) on display
+
+2. **Analog/dial scales** - Rotating needle pointing to a number on a dial
+   - Read where the needle/pointer intersects the numbered scale
+   - Consider the scale increments (marks may be every 1lb, 2lb, etc.)
+   - Read the closest value the needle points to
+
+IMPORTANT GUIDELINES:
+- Focus on the WEIGHT READING only
+- Ignore any body fat %, BMI, or other measurements
+- If units are visible on the display, report them
+- If no units visible, estimate based on reasonable human weight ranges:
+  - Values 50-400 are likely lbs (US)
+  - Values 25-180 are likely kg (metric)
+- For analog scales, read the position of the needle carefully
+- Account for partial visibility - estimate if part is cut off
+- If you cannot read the scale at all, return null for weight
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "weight": 185.4,
+  "unit": "lbs",
+  "scaleType": "digital",
+  "rawReading": "185.4 LB",
+  "confidence": "high",
+  "reasoning": "Clear digital LCD showing 185.4 LB"
+}
+
+Confidence levels:
+- "high" - Clear, unobstructed reading
+- "medium" - Partially visible, some glare, or analog scale requiring interpretation
+- "low" - Significant obstruction, blur, or uncertainty
+
+If NO weight can be determined:
+{
+  "weight": null,
+  "unit": null,
+  "scaleType": "unknown",
+  "rawReading": null,
+  "confidence": "low",
+  "reasoning": "Could not read scale - describe why"
+}`
+
+export async function analyzeScaleImage(
+  imageBase64: string,
+  mimeType: string = 'image/jpeg'
+): Promise<ScaleAnalysisResult> {
+  if (!API_KEY) {
+    return {
+      success: false,
+      weight: null,
+      unit: null,
+      confidence: 'low',
+      scaleType: 'unknown',
+      rawReading: null,
+      error: 'Gemini API key not configured'
+    }
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+
+    const result = await model.generateContent([
+      SCALE_ANALYSIS_PROMPT,
+      {
+        inlineData: {
+          data: imageBase64,
+          mimeType
+        }
+      }
+    ])
+
+    const response = result.response
+    const text = response.text()
+
+    // Extract JSON from response (handle potential markdown code blocks)
+    let jsonStr = text
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1]
+    }
+
+    const parsed = JSON.parse(jsonStr.trim())
+
+    return {
+      success: parsed.weight !== null,
+      weight: parsed.weight,
+      unit: parsed.unit,
+      confidence: parsed.confidence || 'low',
+      scaleType: parsed.scaleType || 'unknown',
+      rawReading: parsed.rawReading
+    }
+  } catch (error) {
+    console.error('Error analyzing scale image:', error)
+    return {
+      success: false,
+      weight: null,
+      unit: null,
+      confidence: 'low',
+      scaleType: 'unknown',
+      rawReading: null,
+      error: error instanceof Error ? error.message : 'Failed to analyze scale image'
+    }
   }
 }

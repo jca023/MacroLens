@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react'
 import type { Profile, Meal } from '../types'
-import { Utensils, Settings as SettingsIcon, Plus, Flame, Beef, Wheat, Droplet, Trash2, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
+import { Utensils, Settings as SettingsIcon, Plus, Trash2, ChevronLeft, ChevronRight, Pencil, Sparkles, Users, Scale } from 'lucide-react'
 import { MealLogger } from './MealLogger'
 import { MealEditor } from './MealEditor'
+import { WeightLogger } from './WeightLogger'
 import { Settings } from './Settings'
 import { WeeklyChart } from './WeeklyChart'
+import { CoachDashboard } from './CoachDashboard'
 import { getMealsForDate, deleteMeal, calculateDailyTotals, getWeeklyCalories, type DailyCalories } from '../services/mealService'
 
 interface DashboardProps {
   profile: Profile | null
+  userEmail: string
   onSignOut: () => Promise<{ error: Error | null }>
   onProfileUpdated?: (profile: Profile) => void
 }
 
-export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardProps) {
+export function Dashboard({ profile, userEmail, onSignOut, onProfileUpdated }: DashboardProps) {
   const [showMealLogger, setShowMealLogger] = useState(false)
+  const [showWeightLogger, setShowWeightLogger] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showCoachDashboard, setShowCoachDashboard] = useState(false)
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null)
   const [meals, setMeals] = useState<Meal[]>([])
   const [weeklyData, setWeeklyData] = useState<DailyCalories[]>([])
@@ -29,7 +34,6 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
   const handleProfileUpdated = (updatedProfile: Profile) => {
     onProfileUpdated?.(updatedProfile)
     setShowSettings(false)
-    // Refresh weekly data after profile update
     fetchWeeklyData()
   }
 
@@ -70,6 +74,11 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
     fetchWeeklyData()
   }
 
+  const handleWeightLogged = () => {
+    // Refresh profile to get updated weight
+    onProfileUpdated?.(profile!)
+  }
+
   const handleMealUpdated = () => {
     fetchMeals()
     fetchWeeklyData()
@@ -95,7 +104,6 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
   const goToNextDay = () => {
     const newDate = new Date(selectedDate)
     newDate.setDate(newDate.getDate() + 1)
-    // Don't allow going past today
     if (newDate <= new Date()) {
       setSelectedDate(newDate)
     }
@@ -141,177 +149,219 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
     })
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const getEncouragement = () => {
+    const percentage = (consumed.calories / targets.calories) * 100
+    if (consumed.calories === 0) return null
+    if (percentage >= 80 && percentage <= 100) return "You're doing great today!"
+    if (percentage > 100 && percentage <= 110) return "Slightly over, but that's okay!"
+    if (consumed.calories > 0 && percentage < 50) return "Keep logging your meals!"
+    return null
+  }
+
+  const encouragement = getEncouragement()
+
   return (
-    <div className="min-h-dvh bg-black">
+    <div className="min-h-dvh bg-[#1A1A1A]">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-zinc-800">
+      <header className="flex items-center justify-between p-4 border-b border-[#333]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-            <Utensils size={18} className="text-emerald-500" />
+          <div className="w-8 h-8 bg-[#F97066]/20 rounded-lg flex items-center justify-center">
+            <Utensils size={18} className="text-[#F97066]" />
           </div>
-          <span className="font-semibold text-white">MacroLens</span>
+          <span className="font-semibold text-[#FAFAFA]">MacroLens</span>
         </div>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="p-2 text-gray-400 hover:text-white transition-colors"
-          title="Settings"
-        >
-          <SettingsIcon size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowWeightLogger(true)}
+            className="p-2 text-[#A1A1A1] hover:text-[#FAFAFA] transition-colors"
+            title="Log Weight"
+          >
+            <Scale size={20} />
+          </button>
+          <button
+            onClick={() => setShowCoachDashboard(true)}
+            className="p-2 text-[#A1A1A1] hover:text-[#FAFAFA] transition-colors"
+            title="Coach Dashboard"
+          >
+            <Users size={20} />
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 text-[#A1A1A1] hover:text-[#FAFAFA] transition-colors"
+            title="Settings"
+          >
+            <SettingsIcon size={20} />
+          </button>
+        </div>
       </header>
 
       {/* Main content */}
       <main className="p-4 pb-24">
         {/* Greeting */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-white">
-            Hi, {profile?.name ?? 'there'}!
+        <div className="mb-6 animate-fade-in">
+          <h1 className="text-2xl font-bold text-[#FAFAFA]">
+            {getGreeting()}, {profile?.name ?? 'there'}
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-[#A1A1A1] text-sm">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
         {/* Date Navigation */}
-        <div className="flex items-center justify-between mb-4 bg-zinc-900 rounded-xl p-3 border border-zinc-800">
+        <div className="flex items-center justify-between mb-6 bg-[#262626] rounded-2xl p-3 border border-[#333]">
           <button
             onClick={goToPreviousDay}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
+            className="p-2 text-[#A1A1A1] hover:text-[#FAFAFA] transition-colors rounded-lg hover:bg-[#333]"
           >
             <ChevronLeft size={20} />
           </button>
           <button
             onClick={goToToday}
-            className={`font-medium ${isToday() ? 'text-emerald-500' : 'text-white hover:text-emerald-400'}`}
+            className={`font-medium px-4 py-1 rounded-full transition-colors ${isToday() ? 'text-[#F97066] bg-[#F97066]/10' : 'text-[#FAFAFA] hover:text-[#F97066]'}`}
           >
             {formatDateHeader()}
           </button>
           <button
             onClick={goToNextDay}
             disabled={isToday()}
-            className={`p-2 transition-colors ${isToday() ? 'text-zinc-700 cursor-not-allowed' : 'text-gray-400 hover:text-white'}`}
+            className={`p-2 transition-colors rounded-lg ${isToday() ? 'text-[#333] cursor-not-allowed' : 'text-[#A1A1A1] hover:text-[#FAFAFA] hover:bg-[#333]'}`}
           >
             <ChevronRight size={20} />
           </button>
         </div>
 
-        {/* Calories card */}
-        <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Flame size={20} className="text-orange-500" />
-              <span className="text-gray-400">Calories</span>
+        {/* Calorie Ring Card */}
+        <div className="bg-[#262626] rounded-3xl p-6 border border-[#333] mb-4 animate-scale-in">
+          <div className="flex items-center justify-between">
+            {/* Left side - Ring */}
+            <div className="relative">
+              <CalorieRing
+                consumed={consumed.calories}
+                target={targets.calories}
+                size={140}
+              />
             </div>
-            <span className={`text-sm ${consumed.calories > targets.calories ? 'text-red-400' : 'text-gray-500'}`}>
-              {consumed.calories > targets.calories
-                ? `${consumed.calories - targets.calories} over`
-                : `${targets.calories - consumed.calories} remaining`}
-            </span>
-          </div>
 
-          <div className="flex items-end gap-2 mb-3">
-            <span className="text-4xl font-bold text-white">{consumed.calories}</span>
-            <span className="text-gray-500 mb-1">/ {targets.calories}</span>
-          </div>
+            {/* Right side - Stats */}
+            <div className="flex-1 ml-6">
+              <div className="mb-4">
+                <span className="text-[#A1A1A1] text-sm">Daily Goal</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-[#FAFAFA]">{consumed.calories}</span>
+                  <span className="text-[#6B6B6B]">/ {targets.calories}</span>
+                </div>
+              </div>
 
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                consumed.calories > targets.calories ? 'bg-red-500' : 'bg-emerald-500'
-              }`}
-              style={{ width: `${Math.min((consumed.calories / targets.calories) * 100, 100)}%` }}
-            />
+              <div className={`text-sm ${consumed.calories > targets.calories ? 'text-[#F87171]' : 'text-[#4ADE80]'}`}>
+                {consumed.calories > targets.calories
+                  ? `${consumed.calories - targets.calories} over target`
+                  : `${targets.calories - consumed.calories} remaining`}
+              </div>
+
+              {encouragement && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-[#F97066]">
+                  <Sparkles size={14} />
+                  <span>{encouragement}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Macros grid */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <MacroCard
-            icon={<Beef size={18} />}
             label="Protein"
             current={consumed.protein}
             target={targets.protein}
-            color="text-red-400"
-            bgColor="bg-red-500/10"
+            color="#F472B6"
           />
           <MacroCard
-            icon={<Wheat size={18} />}
             label="Carbs"
             current={consumed.carbs}
             target={targets.carbs}
-            color="text-yellow-400"
-            bgColor="bg-yellow-500/10"
+            color="#FBBF24"
           />
           <MacroCard
-            icon={<Droplet size={18} />}
             label="Fat"
             current={consumed.fat}
             target={targets.fat}
-            color="text-blue-400"
-            bgColor="bg-blue-500/10"
+            color="#60A5FA"
           />
         </div>
 
         {/* Weekly Chart */}
         {weeklyData.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-6 animate-slide-up">
             <WeeklyChart data={weeklyData} targetCalories={targets.calories} />
           </div>
         )}
 
         {/* Meals list */}
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-white mb-3">
+          <h2 className="text-lg font-semibold text-[#FAFAFA] mb-3">
             {isToday() ? "Today's Meals" : `Meals for ${formatDateHeader()}`}
           </h2>
           {loading ? (
-            <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
-              <div className="text-center text-gray-500">Loading meals...</div>
+            <div className="space-y-3">
+              <div className="skeleton h-24 w-full"></div>
+              <div className="skeleton h-24 w-full"></div>
             </div>
           ) : meals.length === 0 ? (
-            <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 border-dashed">
-              <div className="text-center text-gray-500">
-                <p className="mb-2">No meals logged {isToday() ? 'yet' : 'for this day'}</p>
-                {isToday() && <p className="text-sm">Tap the + button to add your first meal</p>}
+            <div className="bg-[#262626] rounded-2xl p-8 border border-dashed border-[#404040] text-center animate-fade-in">
+              <div className="w-16 h-16 bg-[#F97066]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Utensils size={28} className="text-[#F97066]" />
               </div>
+              <p className="text-[#FAFAFA] font-medium mb-1">No meals logged {isToday() ? 'yet' : 'for this day'}</p>
+              {isToday() && (
+                <p className="text-[#A1A1A1] text-sm">Tap the + button to log your first meal</p>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
-              {meals.map((meal) => (
+              {meals.map((meal, index) => (
                 <div
                   key={meal.id}
-                  className="bg-zinc-900 rounded-xl p-4 border border-zinc-800"
+                  className="bg-[#262626] rounded-2xl p-4 border border-[#333] animate-slide-up card-hover"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <h3 className="text-white font-medium">{meal.name}</h3>
-                      <span className="text-gray-500 text-xs">{formatTime(meal.timestamp)}</span>
+                      <h3 className="text-[#FAFAFA] font-medium">{meal.name}</h3>
+                      <span className="text-[#6B6B6B] text-xs">{formatTime(meal.timestamp)}</span>
                     </div>
                     <div className="flex gap-1">
                       <button
                         onClick={() => setEditingMeal(meal)}
-                        className="p-1.5 text-gray-500 hover:text-emerald-500 transition-colors"
+                        className="p-2 text-[#6B6B6B] hover:text-[#F97066] transition-colors rounded-lg hover:bg-[#333]"
                         title="Edit meal"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
                         onClick={() => handleDeleteMeal(meal.id)}
-                        className="p-1.5 text-gray-500 hover:text-red-500 transition-colors"
+                        className="p-2 text-[#6B6B6B] hover:text-[#F87171] transition-colors rounded-lg hover:bg-[#333]"
                         title="Delete meal"
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-orange-400">{meal.nutrients.calories} cal</span>
-                    <span className="text-red-400">{meal.nutrients.protein}g P</span>
-                    <span className="text-yellow-400">{meal.nutrients.carbs}g C</span>
-                    <span className="text-blue-400">{meal.nutrients.fat}g F</span>
+                  <div className="flex gap-3 text-sm">
+                    <span className="text-[#F97066] font-medium">{meal.nutrients.calories} cal</span>
+                    <span className="text-[#F472B6]">{meal.nutrients.protein}g P</span>
+                    <span className="text-[#FBBF24]">{meal.nutrients.carbs}g C</span>
+                    <span className="text-[#60A5FA]">{meal.nutrients.fat}g F</span>
                   </div>
                   {meal.ingredients && meal.ingredients.length > 0 && (
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className="mt-2 text-xs text-[#6B6B6B]">
                       {meal.ingredients.map(i => i.name).join(', ')}
                     </div>
                   )}
@@ -320,40 +370,15 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
             </div>
           )}
         </div>
-
-        {/* Stats summary */}
-        {profile && (
-          <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Your Stats</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">BMR</span>
-                <span className="text-white ml-2">{profile.bmr} cal</span>
-              </div>
-              <div>
-                <span className="text-gray-500">TDEE</span>
-                <span className="text-white ml-2">{profile.tdee} cal</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Goal</span>
-                <span className="text-emerald-500 ml-2 capitalize">{profile.goal}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Activity</span>
-                <span className="text-white ml-2 capitalize">{profile.activity_level?.replace('_', ' ')}</span>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
       {/* Add meal FAB - only show for today */}
       {isToday() && (
         <button
           onClick={() => setShowMealLogger(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-500 hover:bg-emerald-600 rounded-full flex items-center justify-center shadow-lg transition-colors"
+          className="fixed bottom-6 right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-lg shadow-[#F97066]/20"
         >
-          <Plus size={28} className="text-black" />
+          <Plus size={28} className="text-white" />
         </button>
       )}
 
@@ -363,6 +388,15 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
           userId={profile.id}
           onClose={() => setShowMealLogger(false)}
           onMealLogged={handleMealLogged}
+        />
+      )}
+
+      {/* Weight Logger Modal */}
+      {showWeightLogger && profile && (
+        <WeightLogger
+          profile={profile}
+          onClose={() => setShowWeightLogger(false)}
+          onWeightLogged={handleWeightLogged}
         />
       )}
 
@@ -379,40 +413,99 @@ export function Dashboard({ profile, onSignOut, onProfileUpdated }: DashboardPro
       {showSettings && profile && (
         <Settings
           profile={profile}
+          userEmail={userEmail}
           onClose={() => setShowSettings(false)}
           onProfileUpdated={handleProfileUpdated}
           onSignOut={handleSignOut}
+        />
+      )}
+
+      {/* Coach Dashboard Modal */}
+      {showCoachDashboard && profile && (
+        <CoachDashboard
+          profile={profile}
+          onClose={() => setShowCoachDashboard(false)}
         />
       )}
     </div>
   )
 }
 
+interface CalorieRingProps {
+  consumed: number
+  target: number
+  size: number
+}
+
+function CalorieRing({ consumed, target, size }: CalorieRingProps) {
+  const strokeWidth = 12
+  const radius = (size - strokeWidth) / 2
+  const circumference = radius * 2 * Math.PI
+  const percentage = Math.min((consumed / target) * 100, 100)
+  const offset = circumference - (percentage / 100) * circumference
+  const isOver = consumed > target
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="progress-ring" width={size} height={size}>
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#333"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={isOver ? '#F87171' : '#F97066'}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="progress-ring-circle"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-[#FAFAFA]">{Math.round(percentage)}%</span>
+        <span className="text-xs text-[#A1A1A1]">of goal</span>
+      </div>
+    </div>
+  )
+}
+
 interface MacroCardProps {
-  icon: React.ReactNode
   label: string
   current: number
   target: number
   color: string
-  bgColor: string
 }
 
-function MacroCard({ icon, label, current, target, color, bgColor }: MacroCardProps) {
+function MacroCard({ label, current, target, color }: MacroCardProps) {
   const percentage = Math.min((current / target) * 100, 100)
   const isOver = current > target
 
   return (
-    <div className="bg-zinc-900 rounded-xl p-3 border border-zinc-800">
-      <div className={`w-8 h-8 ${bgColor} rounded-lg flex items-center justify-center mb-2`}>
-        <span className={color}>{icon}</span>
+    <div className="bg-[#262626] rounded-2xl p-4 border border-[#333]">
+      <div className="text-xs text-[#A1A1A1] mb-2">{label}</div>
+      <div className={`text-xl font-bold mb-1`} style={{ color: isOver ? '#F87171' : color }}>
+        {current}g
       </div>
-      <div className="text-xs text-gray-400 mb-1">{label}</div>
-      <div className={`text-lg font-bold ${isOver ? 'text-red-400' : 'text-white'}`}>{current}g</div>
-      <div className="text-xs text-gray-500 mb-2">/ {target}g</div>
-      <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="text-xs text-[#6B6B6B] mb-3">/ {target}g</div>
+
+      {/* Pill-shaped progress bar */}
+      <div className="h-2 bg-[#333] rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${isOver ? 'bg-red-500' : color.replace('text-', 'bg-')}`}
-          style={{ width: `${percentage}%` }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${percentage}%`,
+            backgroundColor: isOver ? '#F87171' : color
+          }}
         />
       </div>
     </div>

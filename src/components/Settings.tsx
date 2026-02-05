@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { X, Loader2, Settings as SettingsIcon, LogOut, Check } from 'lucide-react'
+import { X, Loader2, Settings as SettingsIcon, LogOut, Check, Activity, Calculator, Users } from 'lucide-react'
 import { updateProfile } from '../services/profileService'
+import { CoachingSection } from './CoachingSection'
+import { GetCoachForm } from './GetCoachForm'
+import { InviteCodeEntry } from './InviteCodeEntry'
 import {
   calculateBMR,
   calculateTDEE,
@@ -15,6 +18,7 @@ import type { Profile, ActivityLevel, Goal } from '../types'
 
 interface SettingsProps {
   profile: Profile
+  userEmail: string
   onClose: () => void
   onProfileUpdated: (profile: Profile) => void
   onSignOut: () => void
@@ -33,7 +37,10 @@ interface FormData {
   goal: Goal
 }
 
-export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: SettingsProps) {
+export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSignOut }: SettingsProps) {
+  const [showGetCoachForm, setShowGetCoachForm] = useState(false)
+  const [showInviteCodeEntry, setShowInviteCodeEntry] = useState(false)
+
   const initialHeightFeet = profile.unit_system === 'imperial' && profile.height
     ? Math.floor(profile.height / 12)
     : 5
@@ -66,12 +73,10 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
     let newHeightInches = formData.heightInches
 
     if (newUnit === 'metric') {
-      // Convert from imperial to metric
       newWeight = Math.round(convertWeight(formData.weight, 'lbs', 'kg') * 10) / 10
       const totalInches = formData.heightFeet * 12 + formData.heightInches
       newHeight = Math.round(convertHeight(totalInches, 'in', 'cm'))
     } else {
-      // Convert from metric to imperial
       newWeight = Math.round(convertWeight(formData.weight, 'kg', 'lbs'))
       const totalInches = Math.round(convertHeight(formData.height, 'cm', 'in'))
       newHeightFeet = Math.floor(totalInches / 12)
@@ -151,16 +156,16 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
   const calculated = getCalculatedValues()
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+    <div className="fixed inset-0 bg-[#1A1A1A]/98 z-50 flex flex-col animate-fade-in">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-zinc-800">
+      <header className="flex items-center justify-between p-4 border-b border-[#333]">
         <div className="flex items-center gap-2">
-          <SettingsIcon size={20} className="text-emerald-500" />
-          <h2 className="text-lg font-semibold text-white">Settings</h2>
+          <SettingsIcon size={20} className="text-[#F97066]" />
+          <h2 className="text-lg font-semibold text-[#FAFAFA]">Settings</h2>
         </div>
         <button
           onClick={onClose}
-          className="p-2 text-gray-400 hover:text-white transition-colors"
+          className="p-2 text-[#A1A1A1] hover:text-[#FAFAFA] transition-colors rounded-lg hover:bg-[#262626]"
         >
           <X size={24} />
         </button>
@@ -171,40 +176,40 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
         <div className="space-y-6 max-w-lg mx-auto">
           {/* Profile Section */}
           <section>
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Profile</h3>
-            <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800 space-y-4">
+            <h3 className="text-sm font-medium text-[#A1A1A1] mb-3">Profile</h3>
+            <div className="bg-[#262626] rounded-2xl p-4 border border-[#333] space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Name</label>
+                <label className="block text-xs text-[#6B6B6B] mb-2">Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-3 text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Age</label>
+                  <label className="block text-xs text-[#6B6B6B] mb-2">Age</label>
                   <input
                     type="number"
                     value={formData.age}
                     onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-3 text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors"
                     min={13}
                     max={120}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Gender</label>
+                  <label className="block text-xs text-[#6B6B6B] mb-2">Gender</label>
                   <div className="flex gap-2">
                     {(['male', 'female'] as const).map((g) => (
                       <button
                         key={g}
                         onClick={() => setFormData({ ...formData, gender: g })}
-                        className={`flex-1 py-2 rounded-lg border transition-colors text-sm ${
+                        className={`flex-1 py-3 rounded-xl border-2 transition-all text-sm ${
                           formData.gender === g
-                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500'
-                            : 'bg-zinc-800 border-zinc-700 text-gray-400'
+                            ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
+                            : 'bg-[#333] border-[#404040] text-[#A1A1A1] hover:border-[#6B6B6B]'
                         }`}
                       >
                         {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -218,19 +223,19 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
 
           {/* Body Measurements */}
           <section>
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Body Measurements</h3>
-            <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800 space-y-4">
+            <h3 className="text-sm font-medium text-[#A1A1A1] mb-3">Body Measurements</h3>
+            <div className="bg-[#262626] rounded-2xl p-4 border border-[#333] space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Unit System</label>
+                <label className="block text-xs text-[#6B6B6B] mb-2">Unit System</label>
                 <div className="flex gap-2">
                   {(['imperial', 'metric'] as const).map((unit) => (
                     <button
                       key={unit}
                       onClick={() => handleUnitChange(unit)}
-                      className={`flex-1 py-2 rounded-lg border transition-colors text-sm ${
+                      className={`flex-1 py-3 rounded-xl border-2 transition-all text-sm ${
                         formData.unitSystem === unit
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500'
-                          : 'bg-zinc-800 border-zinc-700 text-gray-400'
+                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
+                          : 'bg-[#333] border-[#404040] text-[#A1A1A1] hover:border-[#6B6B6B]'
                       }`}
                     >
                       {unit === 'imperial' ? 'US (lbs, ft/in)' : 'Metric (kg, cm)'}
@@ -239,53 +244,53 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">
+                <label className="block text-xs text-[#6B6B6B] mb-2">
                   Weight ({formData.unitSystem === 'imperial' ? 'lbs' : 'kg'})
                 </label>
                 <input
                   type="number"
                   value={formData.weight}
                   onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-3 text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors"
                   step={formData.unitSystem === 'imperial' ? '1' : '0.1'}
                 />
               </div>
               {formData.unitSystem === 'imperial' ? (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Height</label>
+                  <label className="block text-xs text-[#6B6B6B] mb-2">Height</label>
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
                       <input
                         type="number"
                         value={formData.heightFeet}
                         onChange={(e) => setFormData({ ...formData, heightFeet: parseInt(e.target.value) || 0 })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 pr-8 text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-3 pr-10 text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors"
                         min={1}
                         max={8}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">ft</span>
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-sm">ft</span>
                     </div>
                     <div className="flex-1 relative">
                       <input
                         type="number"
                         value={formData.heightInches}
                         onChange={(e) => setFormData({ ...formData, heightInches: parseInt(e.target.value) || 0 })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 pr-8 text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-3 pr-10 text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors"
                         min={0}
                         max={11}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">in</span>
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-sm">in</span>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Height (cm)</label>
+                  <label className="block text-xs text-[#6B6B6B] mb-2">Height (cm)</label>
                   <input
                     type="number"
                     value={formData.height}
                     onChange={(e) => setFormData({ ...formData, height: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-3 text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors"
                   />
                 </div>
               )}
@@ -294,31 +299,34 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
 
           {/* Activity & Goal */}
           <section>
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Activity & Goal</h3>
-            <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800 space-y-4">
+            <h3 className="text-sm font-medium text-[#A1A1A1] mb-3 flex items-center gap-2">
+              <Activity size={16} />
+              Activity & Goal
+            </h3>
+            <div className="bg-[#262626] rounded-2xl p-4 border border-[#333] space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-2">Activity Level</label>
+                <label className="block text-xs text-[#6B6B6B] mb-2">Activity Level</label>
                 <div className="space-y-2">
                   {(Object.keys(ACTIVITY_DESCRIPTIONS) as ActivityLevel[]).map((level) => (
                     <button
                       key={level}
                       onClick={() => setFormData({ ...formData, activityLevel: level })}
-                      className={`w-full text-left py-2 px-3 rounded-lg border transition-colors ${
+                      className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all ${
                         formData.activityLevel === level
-                          ? 'bg-emerald-500/20 border-emerald-500'
-                          : 'bg-zinc-800 border-zinc-700'
+                          ? 'bg-[#F97066]/10 border-[#F97066]'
+                          : 'bg-[#333] border-[#404040] hover:border-[#6B6B6B]'
                       }`}
                     >
-                      <div className={`text-sm ${formData.activityLevel === level ? 'text-emerald-500' : 'text-white'}`}>
+                      <div className={`text-sm font-medium ${formData.activityLevel === level ? 'text-[#F97066]' : 'text-[#FAFAFA]'}`}>
                         {level.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </div>
-                      <div className="text-xs text-gray-500">{ACTIVITY_DESCRIPTIONS[level]}</div>
+                      <div className="text-xs text-[#6B6B6B]">{ACTIVITY_DESCRIPTIONS[level]}</div>
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-2">Goal</label>
+                <label className="block text-xs text-[#6B6B6B] mb-2">Goal</label>
                 <div className="flex gap-2">
                   {([
                     { value: 'lose', label: 'Lose' },
@@ -328,10 +336,10 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
                     <button
                       key={option.value}
                       onClick={() => setFormData({ ...formData, goal: option.value })}
-                      className={`flex-1 py-2 rounded-lg border transition-colors text-sm ${
+                      className={`flex-1 py-3 rounded-xl border-2 transition-all text-sm ${
                         formData.goal === option.value
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500'
-                          : 'bg-zinc-800 border-zinc-700 text-gray-400'
+                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
+                          : 'bg-[#333] border-[#404040] text-[#A1A1A1] hover:border-[#6B6B6B]'
                       }`}
                     >
                       {option.label}
@@ -342,39 +350,80 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
             </div>
           </section>
 
-          {/* Calculated Targets Preview */}
+          {/* Calculated Stats */}
           <section>
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Daily Targets (Preview)</h3>
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-[#A1A1A1] mb-3 flex items-center gap-2">
+              <Calculator size={16} />
+              Your Metabolism
+            </h3>
+            <div className="bg-[#262626] rounded-2xl p-4 border border-[#333]">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center p-3 bg-[#333] rounded-xl">
+                  <div className="text-xs text-[#6B6B6B] mb-1">BMR</div>
+                  <div className="text-xl font-bold text-[#FAFAFA]">{calculated.bmr}</div>
+                  <div className="text-xs text-[#6B6B6B]">cal/day at rest</div>
+                </div>
+                <div className="text-center p-3 bg-[#333] rounded-xl">
+                  <div className="text-xs text-[#6B6B6B] mb-1">TDEE</div>
+                  <div className="text-xl font-bold text-[#FAFAFA]">{calculated.tdee}</div>
+                  <div className="text-xs text-[#6B6B6B]">cal/day active</div>
+                </div>
+              </div>
+              <p className="text-xs text-[#6B6B6B] text-center">
+                BMR = Base Metabolic Rate (calories burned at rest)
+                <br />
+                TDEE = Total Daily Energy Expenditure (with activity)
+              </p>
+            </div>
+          </section>
+
+          {/* Daily Targets Preview */}
+          <section>
+            <h3 className="text-sm font-medium text-[#A1A1A1] mb-3">Daily Targets</h3>
+            <div className="bg-gradient-to-br from-[#F97066]/15 to-[#FEB8B0]/10 border border-[#F97066]/20 rounded-2xl p-4">
               <div className="grid grid-cols-4 gap-3 text-center">
                 <div>
-                  <div className="text-xl font-bold text-white">{calculated.dailyTargets.calories}</div>
-                  <div className="text-xs text-gray-400">Calories</div>
+                  <div className="text-xl font-bold text-[#FAFAFA]">{calculated.dailyTargets.calories}</div>
+                  <div className="text-xs text-[#A1A1A1]">Calories</div>
                 </div>
                 <div>
-                  <div className="text-xl font-bold text-white">{calculated.dailyTargets.protein}g</div>
-                  <div className="text-xs text-gray-400">Protein</div>
+                  <div className="text-xl font-bold text-[#F472B6]">{calculated.dailyTargets.protein}g</div>
+                  <div className="text-xs text-[#A1A1A1]">Protein</div>
                 </div>
                 <div>
-                  <div className="text-xl font-bold text-white">{calculated.dailyTargets.carbs}g</div>
-                  <div className="text-xs text-gray-400">Carbs</div>
+                  <div className="text-xl font-bold text-[#FBBF24]">{calculated.dailyTargets.carbs}g</div>
+                  <div className="text-xs text-[#A1A1A1]">Carbs</div>
                 </div>
                 <div>
-                  <div className="text-xl font-bold text-white">{calculated.dailyTargets.fat}g</div>
-                  <div className="text-xs text-gray-400">Fat</div>
+                  <div className="text-xl font-bold text-[#60A5FA]">{calculated.dailyTargets.fat}g</div>
+                  <div className="text-xs text-[#A1A1A1]">Fat</div>
                 </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-emerald-500/20 text-center text-xs text-gray-500">
-                BMR: {calculated.bmr} | TDEE: {calculated.tdee}
               </div>
             </div>
+          </section>
+
+          {/* Coaching Section */}
+          <section>
+            <h3 className="text-sm font-medium text-[#A1A1A1] mb-3 flex items-center gap-2">
+              <Users size={16} />
+              Coaching
+            </h3>
+            <CoachingSection
+              profile={profile}
+              onRequestCoach={() => {
+                // TODO: Show request coach modal
+                alert('Request Coach: Enter your coach\'s email address to send a connection request.')
+              }}
+              onEnterCode={() => setShowInviteCodeEntry(true)}
+              onGetCoach={() => setShowGetCoachForm(true)}
+            />
           </section>
 
           {/* Sign Out */}
           <section>
             <button
               onClick={onSignOut}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-red-400 hover:bg-zinc-800 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-4 bg-[#262626] border border-[#333] rounded-2xl text-[#F87171] hover:bg-[#333] transition-colors"
             >
               <LogOut size={18} />
               Sign Out
@@ -382,7 +431,7 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
           </section>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
+            <div className="bg-[#F87171]/10 border border-[#F87171]/30 rounded-xl p-4 text-[#F87171] text-sm">
               {error}
             </div>
           )}
@@ -390,18 +439,18 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-zinc-800">
+      <div className="p-4 border-t border-[#333]">
         <div className="flex gap-3 max-w-lg mx-auto">
           <button
             onClick={onClose}
-            className="flex-1 py-3 bg-zinc-800 text-white rounded-xl font-medium hover:bg-zinc-700 transition-colors"
+            className="flex-1 py-4 bg-[#262626] text-[#FAFAFA] rounded-2xl font-medium hover:bg-[#333] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-medium hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 py-4 btn-primary rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? (
               <>
@@ -417,6 +466,29 @@ export function Settings({ profile, onClose, onProfileUpdated, onSignOut }: Sett
           </button>
         </div>
       </div>
+
+      {/* Get Coach Form Modal */}
+      {showGetCoachForm && (
+        <GetCoachForm
+          profile={profile}
+          userEmail={userEmail}
+          onClose={() => setShowGetCoachForm(false)}
+        />
+      )}
+
+      {/* Invite Code Entry Modal */}
+      {showInviteCodeEntry && (
+        <InviteCodeEntry
+          clientId={profile.id}
+          clientEmail={userEmail}
+          onClose={() => setShowInviteCodeEntry(false)}
+          onSuccess={() => {
+            setShowInviteCodeEntry(false)
+            // Refresh the page to show updated connection status
+            window.location.reload()
+          }}
+        />
+      )}
     </div>
   )
 }
