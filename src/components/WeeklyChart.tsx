@@ -39,6 +39,11 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
     return date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2)
   }
 
+  const isDateToday = (date: Date) => {
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
   // Calculate stats
   const daysWithData = data.filter(d => d.calories > 0)
   const averageCalories = daysWithData.length > 0
@@ -47,17 +52,17 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
   const daysOnTarget = data.filter(d => d.calories > 0 && d.calories <= targetCalories).length
 
   return (
-    <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+    <div className="bg-[#262626] rounded-2xl p-4 border border-[#333]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-400">This Week</h3>
+        <h3 className="text-sm font-medium text-[#A1A1A1]">This Week</h3>
         <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="text-gray-500">Under</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F97066]"></span>
+            <span className="text-[#6B6B6B]">On track</span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500"></span>
-            <span className="text-gray-500">Over</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F87171]"></span>
+            <span className="text-[#6B6B6B]">Over</span>
           </span>
         </div>
       </div>
@@ -71,7 +76,7 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
             y1={getTargetLineY()}
             x2={chartWidth}
             y2={getTargetLineY()}
-            stroke="#6b7280"
+            stroke="#6B6B6B"
             strokeDasharray="4 4"
             strokeWidth={1}
           />
@@ -79,7 +84,7 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
             x={chartWidth}
             y={getTargetLineY() - 4}
             textAnchor="end"
-            className="fill-gray-600 text-[10px]"
+            className="fill-[#6B6B6B] text-[10px]"
           >
             {targetCalories}
           </text>
@@ -91,22 +96,34 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
             const y = chartHeight - paddingBottom - barHeight
             const isOver = day.calories > targetCalories
             const isEmpty = day.calories === 0
+            const isToday = isDateToday(day.date)
 
             return (
               <g key={index}>
+                {/* Today highlight background */}
+                {isToday && (
+                  <rect
+                    x={x - 4}
+                    y={0}
+                    width={barWidth + 8}
+                    height={chartHeight - 8}
+                    rx={8}
+                    className="fill-[#F97066]/5"
+                  />
+                )}
                 {/* Bar */}
                 <rect
                   x={x}
-                  y={isEmpty ? chartHeight - paddingBottom - 2 : y}
+                  y={isEmpty ? chartHeight - paddingBottom - 3 : y}
                   width={barWidth}
-                  height={isEmpty ? 2 : barHeight}
-                  rx={4}
+                  height={isEmpty ? 3 : barHeight}
+                  rx={6}
                   className={
                     isEmpty
-                      ? 'fill-zinc-800'
+                      ? 'fill-[#333]'
                       : isOver
-                        ? 'fill-red-500'
-                        : 'fill-emerald-500'
+                        ? 'fill-[#F87171]'
+                        : 'fill-[#F97066]'
                   }
                 />
                 {/* Day label */}
@@ -114,7 +131,7 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
                   x={x + barWidth / 2}
                   y={chartHeight - 6}
                   textAnchor="middle"
-                  className="fill-gray-500 text-[10px]"
+                  className={`text-[10px] ${isToday ? 'fill-[#F97066] font-medium' : 'fill-[#6B6B6B]'}`}
                 >
                   {getDayLabel(day.date)}
                 </text>
@@ -124,7 +141,7 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
                     x={x + barWidth / 2}
                     y={y - 4}
                     textAnchor="middle"
-                    className={`text-[9px] ${isOver ? 'fill-red-400' : 'fill-emerald-400'}`}
+                    className={`text-[9px] font-medium ${isOver ? 'fill-[#F87171]' : 'fill-[#F97066]'}`}
                   >
                     {day.calories}
                   </text>
@@ -136,20 +153,20 @@ export function WeeklyChart({ data, targetCalories }: WeeklyChartProps) {
       </div>
 
       {/* Stats */}
-      <div className="flex justify-between mt-4 pt-3 border-t border-zinc-800">
+      <div className="flex justify-between mt-4 pt-3 border-t border-[#333]">
         <div className="text-center">
-          <div className="text-lg font-semibold text-white">{averageCalories}</div>
-          <div className="text-xs text-gray-500">Avg/day</div>
+          <div className="text-lg font-semibold text-[#FAFAFA]">{averageCalories}</div>
+          <div className="text-xs text-[#6B6B6B]">Avg/day</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-semibold text-white">{daysOnTarget}/{daysWithData.length}</div>
-          <div className="text-xs text-gray-500">Days on target</div>
+          <div className="text-lg font-semibold text-[#FAFAFA]">{daysOnTarget}/{daysWithData.length}</div>
+          <div className="text-xs text-[#6B6B6B]">Days on target</div>
         </div>
         <div className="text-center">
-          <div className={`text-lg font-semibold ${averageCalories <= targetCalories ? 'text-emerald-500' : 'text-red-400'}`}>
+          <div className={`text-lg font-semibold ${averageCalories <= targetCalories ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}>
             {averageCalories <= targetCalories ? '-' : '+'}{Math.abs(averageCalories - targetCalories)}
           </div>
-          <div className="text-xs text-gray-500">vs target</div>
+          <div className="text-xs text-[#6B6B6B]">vs target</div>
         </div>
       </div>
     </div>

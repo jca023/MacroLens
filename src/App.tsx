@@ -111,7 +111,7 @@ function App() {
   if (authLoading || appState === 'loading') {
     return (
       <div className="min-h-dvh bg-black flex items-center justify-center">
-        <Loader2 size={48} className="text-emerald-500 animate-spin" />
+        <Loader2 size={48} className="text-[#F97066] animate-spin" />
       </div>
     )
   }
@@ -154,7 +154,14 @@ function App() {
   }
 
   // Show dashboard
-  return <Dashboard profile={profile} onSignOut={handleSignOut} onProfileUpdated={handleProfileUpdated} />
+  return (
+    <Dashboard
+      profile={profile}
+      userEmail={user?.email || ''}
+      onSignOut={handleSignOut}
+      onProfileUpdated={handleProfileUpdated}
+    />
+  )
 }
 
 export default App

@@ -176,7 +176,7 @@ export function PrivacyPolicy({ onBack }: PrivacyPolicyProps) {
             <p className="leading-relaxed">
               If you have questions about this Privacy Policy or wish to exercise your data rights,
               please contact us at{' '}
-              <span className="text-emerald-500">privacy@macrolens.app</span>
+              <span className="text-[#F97066]">privacy@macrolens.app</span>
             </p>
           </section>
         </div>

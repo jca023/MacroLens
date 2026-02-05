@@ -139,31 +139,31 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
   }
 
   return (
-    <div className="min-h-dvh bg-black flex flex-col items-center justify-center p-8">
+    <div className="min-h-dvh bg-[#1A1A1A] flex flex-col items-center justify-center p-8">
       {/* Logo */}
-      <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
-        <Utensils size={32} className="text-emerald-500" />
+      <div className="w-16 h-16 bg-[#F97066]/20 rounded-2xl flex items-center justify-center mb-6">
+        <Utensils size={32} className="text-[#F97066]" />
       </div>
-      <h1 className="text-4xl font-bold text-emerald-500 mb-2">MacroLens</h1>
-      <p className="text-gray-400 mb-8 text-center">Your AI Food Companion</p>
+      <h1 className="text-4xl font-bold text-[#F97066] mb-2">MacroLens</h1>
+      <p className="text-[#A1A1A1] mb-8 text-center">Your AI Food Companion</p>
 
       {/* Card */}
-      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
+      <div className="w-full max-w-sm bg-[#262626] rounded-2xl p-6 border border-[#333]">
         {viewState === 'otp-sent' || viewState === 'verifying' ? (
           // OTP code entry state
           <div>
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+              className="flex items-center gap-2 text-[#A1A1A1] hover:text-[#FAFAFA] transition-colors mb-4"
             >
               <ArrowLeft size={16} />
               <span>Back</span>
             </button>
 
-            <h2 className="text-xl font-semibold text-white mb-2">Enter code</h2>
-            <p className="text-gray-400 text-sm mb-6">
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-2">Enter code</h2>
+            <p className="text-[#A1A1A1] text-sm mb-6">
               We sent a 6-digit code to<br />
-              <span className="text-white font-medium">{email}</span>
+              <span className="text-[#FAFAFA] font-medium">{email}</span>
             </p>
 
             {/* OTP Input Boxes */}
@@ -179,19 +179,19 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   disabled={viewState === 'verifying'}
-                  className="w-12 h-14 bg-zinc-800 border border-zinc-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                  className="w-12 h-14 bg-[#333] border border-[#404040] rounded-xl text-center text-2xl font-bold text-[#FAFAFA] focus:outline-none focus:border-[#F97066] transition-colors disabled:opacity-50"
                 />
               ))}
             </div>
 
             {/* Error message */}
             {error && (
-              <p className="text-red-400 text-sm mb-4 text-center">{error}</p>
+              <p className="text-[#F87171] text-sm mb-4 text-center">{error}</p>
             )}
 
             {/* Verifying indicator */}
             {viewState === 'verifying' && (
-              <div className="flex items-center justify-center gap-2 text-gray-400 mb-4">
+              <div className="flex items-center justify-center gap-2 text-[#A1A1A1] mb-4">
                 <Loader2 size={18} className="animate-spin" />
                 <span>Verifying...</span>
               </div>
@@ -199,11 +199,11 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
 
             {/* Resend code */}
             <div className="text-center">
-              <p className="text-gray-500 text-sm mb-2">Didn't receive the code?</p>
+              <p className="text-[#6B6B6B] text-sm mb-2">Didn't receive the code?</p>
               <button
                 onClick={handleResendCode}
                 disabled={viewState === 'verifying'}
-                className="text-emerald-500 hover:text-emerald-400 text-sm font-medium transition-colors disabled:opacity-50"
+                className="text-[#F97066] hover:text-[#FEB8B0] text-sm font-medium transition-colors disabled:opacity-50"
               >
                 Resend code
               </button>
@@ -212,8 +212,8 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
         ) : (
           // Input state
           <>
-            <h2 className="text-xl font-semibold text-white mb-1">Sign in</h2>
-            <p className="text-gray-400 text-sm mb-6">
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-1">Sign in</h2>
+            <p className="text-[#A1A1A1] text-sm mb-6">
               {authMode === 'otp'
                 ? 'Enter your email to receive a code'
                 : 'Enter your email and password'}
@@ -223,13 +223,13 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
             <form onSubmit={handleSubmit}>
               {/* Email input */}
               <div className="relative mb-4">
-                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B6B6B]" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-[#333] border border-[#404040] rounded-xl py-3 pl-10 pr-4 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                   disabled={viewState === 'sending'}
                   autoComplete="email"
                 />
@@ -238,13 +238,13 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
               {/* Password input (only for password mode) */}
               {authMode === 'password' && (
                 <div className="relative mb-4">
-                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B6B6B]" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-[#333] border border-[#404040] rounded-xl py-3 pl-10 pr-4 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                     disabled={viewState === 'sending'}
                     autoComplete="current-password"
                   />
@@ -253,14 +253,14 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
 
               {/* Error message */}
               {error && (
-                <p className="text-red-400 text-sm mb-4">{error}</p>
+                <p className="text-[#F87171] text-sm mb-4">{error}</p>
               )}
 
               {/* Submit button */}
               <button
                 type="submit"
                 disabled={viewState === 'sending'}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-black font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="w-full btn-primary disabled:opacity-50 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 {viewState === 'sending' ? (
                   <>
@@ -277,7 +277,7 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
             <div className="mt-4 text-center">
               <button
                 onClick={toggleAuthMode}
-                className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                className="text-[#6B6B6B] hover:text-[#A1A1A1] text-sm transition-colors"
               >
                 {authMode === 'otp'
                   ? 'Sign in with password instead'
@@ -289,7 +289,7 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
       </div>
 
       {/* Footer */}
-      <p className="text-gray-600 text-xs mt-6 text-center">
+      <p className="text-[#6B6B6B] text-xs mt-6 text-center">
         {authMode === 'otp'
           ? 'Sign in securely with a one-time code'
           : 'Sign in with your account'}

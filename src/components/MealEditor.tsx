@@ -67,7 +67,7 @@ export function MealEditor({ meal, onClose, onMealUpdated }: MealEditorProps) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#F97066]"
             />
           </div>
 
@@ -81,7 +81,7 @@ export function MealEditor({ meal, onClose, onMealUpdated }: MealEditorProps) {
                   type="number"
                   value={calories}
                   onChange={(e) => setCalories(parseInt(e.target.value) || 0)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#F97066]"
                 />
               </div>
               <div>
@@ -90,7 +90,7 @@ export function MealEditor({ meal, onClose, onMealUpdated }: MealEditorProps) {
                   type="number"
                   value={protein}
                   onChange={(e) => setProtein(parseInt(e.target.value) || 0)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#F97066]"
                 />
               </div>
               <div>
@@ -99,7 +99,7 @@ export function MealEditor({ meal, onClose, onMealUpdated }: MealEditorProps) {
                   type="number"
                   value={carbs}
                   onChange={(e) => setCarbs(parseInt(e.target.value) || 0)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#F97066]"
                 />
               </div>
               <div>
@@ -108,15 +108,15 @@ export function MealEditor({ meal, onClose, onMealUpdated }: MealEditorProps) {
                   type="number"
                   value={fat}
                   onChange={(e) => setFat(parseInt(e.target.value) || 0)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#F97066]"
                 />
               </div>
             </div>
           </div>
 
           {/* Preview */}
-          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
-            <h4 className="text-emerald-400 font-medium mb-2">Updated Nutrition</h4>
+          <div className="bg-[#F97066]/10 border border-[#F97066]/30 rounded-xl p-4">
+            <h4 className="text-[#F97066] font-medium mb-2">Updated Nutrition</h4>
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-white">{Math.round(calories)}</div>
@@ -157,7 +157,7 @@ export function MealEditor({ meal, onClose, onMealUpdated }: MealEditorProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-medium hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 py-3 bg-[#F97066] text-white rounded-xl font-medium hover:bg-[#FEB8B0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? (
               <>

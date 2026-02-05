@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, User, Activity, Target, Scale, Check, Utensils, Camera, Sparkles, TrendingUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, User, Activity, Scale, Check, Utensils, Camera, Sparkles, TrendingUp } from 'lucide-react'
 import type { ActivityLevel, Goal, Profile } from '../types'
 import {
   calculateBMR,
@@ -17,9 +17,9 @@ interface OnboardingProps {
   onComplete: (profile: Omit<Profile, 'created_at' | 'updated_at'>) => Promise<void>
 }
 
-type Step = 'welcome' | 'name' | 'basics' | 'body' | 'activity' | 'goal' | 'summary'
+type Step = 'welcome' | 'basics' | 'body' | 'activity' | 'summary'
 
-const STEPS: Step[] = ['welcome', 'name', 'basics', 'body', 'activity', 'goal', 'summary']
+const STEPS: Step[] = ['welcome', 'basics', 'body', 'activity', 'summary']
 
 interface FormData {
   name: string
@@ -57,8 +57,6 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 'welcome':
-        return true
-      case 'name':
         return formData.name.trim().length >= 2
       case 'basics':
         return formData.age !== null && formData.age > 0 && formData.gender !== null
@@ -69,9 +67,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
         }
         return formData.height !== null && formData.height > 0
       case 'activity':
-        return formData.activityLevel !== null
-      case 'goal':
-        return formData.goal !== null
+        return formData.activityLevel !== null && formData.goal !== null
       case 'summary':
         return true
       default:
@@ -96,7 +92,6 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
       return
     }
 
-    // Calculate total height in inches for imperial
     let heightValue: number
     if (formData.unitSystem === 'imperial') {
       if (formData.heightFeet === null) return
@@ -108,7 +103,6 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
     setSaving(true)
 
-    // Convert to metric for calculations
     const weightKg = formData.unitSystem === 'imperial'
       ? convertWeight(formData.weight, 'lbs', 'kg')
       : formData.weight
@@ -154,7 +148,6 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
     }
   }
 
-  // Calculate preview values for summary
   const getPreviewValues = () => {
     if (!formData.age || !formData.gender || !formData.weight || !formData.activityLevel || !formData.goal) {
       return null
@@ -186,15 +179,19 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
   }
 
   return (
-    <div className="min-h-dvh bg-black flex flex-col">
-      {/* Progress bar */}
-      <div className="p-4">
-        <div className="flex gap-1">
+    <div className="min-h-dvh bg-[#1A1A1A] flex flex-col">
+      {/* Progress dots */}
+      <div className="p-6 pb-2">
+        <div className="flex justify-center gap-2">
           {STEPS.map((step, index) => (
             <div
               key={step}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                index <= currentIndex ? 'bg-emerald-500' : 'bg-zinc-800'
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                index === currentIndex
+                  ? 'bg-[#F97066] w-6'
+                  : index < currentIndex
+                    ? 'bg-[#F97066]'
+                    : 'bg-[#333]'
               }`}
             />
           ))}
@@ -204,101 +201,73 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
       {/* Content */}
       <div className="flex-1 flex flex-col p-6">
         {currentStep === 'welcome' && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
+          <div className="flex-1 flex flex-col justify-center animate-fade-in max-w-md mx-auto w-full">
             {/* Logo */}
-            <div className="w-20 h-20 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
-              <Utensils size={40} className="text-emerald-500" />
-            </div>
-
-            <h1 className="text-3xl font-bold text-white mb-2">Welcome to MacroLens</h1>
-            <p className="text-gray-400 mb-8">Your AI-powered nutrition companion</p>
-
-            {/* Feature highlights */}
-            <div className="w-full space-y-4 mb-8">
-              <div className="flex items-center gap-4 bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Camera size={20} className="text-emerald-500" />
-                </div>
-                <div className="text-left">
-                  <div className="text-white font-medium">Snap & Track</div>
-                  <div className="text-gray-500 text-sm">Take a photo of your food and we'll do the rest</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Sparkles size={20} className="text-emerald-500" />
-                </div>
-                <div className="text-left">
-                  <div className="text-white font-medium">AI-Powered Analysis</div>
-                  <div className="text-gray-500 text-sm">Get instant calories and macros with Gemini AI</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <TrendingUp size={20} className="text-emerald-500" />
-                </div>
-                <div className="text-left">
-                  <div className="text-white font-medium">Personalized Goals</div>
-                  <div className="text-gray-500 text-sm">Targets calculated from your BMR & TDEE</div>
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#F97066]/20 rounded-2xl blur-xl"></div>
+                <div className="relative w-16 h-16 bg-[#F97066]/10 rounded-2xl flex items-center justify-center border border-[#F97066]/20">
+                  <Utensils size={32} className="text-[#F97066]" />
                 </div>
               </div>
             </div>
 
-            <p className="text-gray-500 text-sm">
-              Let's set up your profile to calculate your personalized nutrition targets
-            </p>
+            <h1 className="text-2xl font-bold text-[#FAFAFA] text-center mb-2">Welcome to MacroLens</h1>
+            <p className="text-[#A1A1A1] text-center mb-8">Let's set up your personalized nutrition plan</p>
+
+            {/* Feature highlights - more compact */}
+            <div className="space-y-3 mb-8">
+              <MiniFeature icon={<Camera size={18} />} text="Snap photos to log meals instantly" />
+              <MiniFeature icon={<Sparkles size={18} />} text="AI analyzes your food automatically" />
+              <MiniFeature icon={<TrendingUp size={18} />} text="Track progress toward your goals" />
+            </div>
+
+            {/* Name input integrated into welcome */}
+            <div>
+              <label className="block text-[#A1A1A1] text-sm mb-2">What should we call you?</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter your name"
+                className="w-full bg-[#262626] border border-[#333] rounded-2xl py-4 px-4 text-[#FAFAFA] text-lg placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
+                autoFocus
+              />
+            </div>
           </div>
-        )}
-
-        {currentStep === 'name' && (
-          <StepContent
-            icon={<User size={32} />}
-            title="What's your name?"
-            subtitle="Let's personalize your experience"
-          >
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter your name"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-4 px-4 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-emerald-500"
-              autoFocus
-            />
-          </StepContent>
         )}
 
         {currentStep === 'basics' && (
           <StepContent
-            icon={<User size={32} />}
-            title="Basic Information"
-            subtitle="This helps us calculate your metabolism"
+            icon={<User size={28} />}
+            title={`Nice to meet you, ${formData.name}!`}
+            subtitle="A few quick details to personalize your plan"
           >
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Age</label>
+                <label className="block text-[#A1A1A1] text-sm mb-2">How old are you?</label>
                 <input
                   type="number"
                   value={formData.age ?? ''}
                   onChange={(e) => setFormData({ ...formData, age: e.target.value ? parseInt(e.target.value) : null })}
-                  placeholder="Enter your age"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                  placeholder="Age"
+                  className="w-full bg-[#262626] border border-[#333] rounded-2xl py-4 px-4 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                   min={13}
                   max={120}
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Gender</label>
+                <label className="block text-[#A1A1A1] text-sm mb-2">What's your biological sex?</label>
+                <p className="text-[#6B6B6B] text-xs mb-3">Used to calculate your metabolism</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {(['male', 'female'] as const).map((g) => (
+                  {(['female', 'male'] as const).map((g) => (
                     <button
                       key={g}
                       onClick={() => setFormData({ ...formData, gender: g })}
-                      className={`py-3 px-4 rounded-xl border transition-colors ${
+                      className={`py-4 px-4 rounded-2xl border-2 transition-all ${
                         formData.gender === g
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500'
-                          : 'bg-zinc-800 border-zinc-700 text-gray-400'
+                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
+                          : 'bg-[#262626] border-[#333] text-[#A1A1A1] hover:border-[#404040]'
                       }`}
                     >
                       {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -312,45 +281,45 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
         {currentStep === 'body' && (
           <StepContent
-            icon={<Scale size={32} />}
-            title="Body Measurements"
-            subtitle="Used to calculate your daily calorie needs"
+            icon={<Scale size={28} />}
+            title="Body measurements"
+            subtitle="This helps us calculate your daily calorie needs"
           >
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Unit System</label>
+                <label className="block text-[#A1A1A1] text-sm mb-2">Preferred units</label>
                 <div className="grid grid-cols-2 gap-3">
                   {(['imperial', 'metric'] as const).map((unit) => (
                     <button
                       key={unit}
                       onClick={() => setFormData({ ...formData, unitSystem: unit })}
-                      className={`py-2 px-4 rounded-xl border transition-colors text-sm ${
+                      className={`py-3 px-4 rounded-xl border-2 transition-all text-sm ${
                         formData.unitSystem === unit
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500'
-                          : 'bg-zinc-800 border-zinc-700 text-gray-400'
+                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
+                          : 'bg-[#262626] border-[#333] text-[#A1A1A1] hover:border-[#404040]'
                       }`}
                     >
-                      {unit === 'imperial' ? 'US (lbs, ft/in)' : 'Metric (kg, cm)'}
+                      {unit === 'imperial' ? 'US (lbs, ft)' : 'Metric (kg, cm)'}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">
+                <label className="block text-[#A1A1A1] text-sm mb-2">
                   Weight ({formData.unitSystem === 'imperial' ? 'lbs' : 'kg'})
                 </label>
                 <input
                   type="number"
                   value={formData.weight ?? ''}
                   onChange={(e) => setFormData({ ...formData, weight: e.target.value ? parseFloat(e.target.value) : null })}
-                  placeholder={`Enter weight in ${formData.unitSystem === 'imperial' ? 'pounds' : 'kilograms'}`}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                  placeholder={formData.unitSystem === 'imperial' ? '150' : '68'}
+                  className="w-full bg-[#262626] border border-[#333] rounded-2xl py-4 px-4 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                   step="0.1"
                 />
               </div>
               {formData.unitSystem === 'imperial' ? (
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Height</label>
+                  <label className="block text-[#A1A1A1] text-sm mb-2">Height</label>
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <div className="relative">
@@ -359,11 +328,11 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
                           value={formData.heightFeet ?? ''}
                           onChange={(e) => setFormData({ ...formData, heightFeet: e.target.value ? parseInt(e.target.value) : null })}
                           placeholder="5"
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 pr-10 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                          className="w-full bg-[#262626] border border-[#333] rounded-2xl py-4 px-4 pr-12 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                           min={1}
                           max={8}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">ft</span>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B]">ft</span>
                       </div>
                     </div>
                     <div className="flex-1">
@@ -373,24 +342,24 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
                           value={formData.heightInches ?? ''}
                           onChange={(e) => setFormData({ ...formData, heightInches: e.target.value ? parseInt(e.target.value) : null })}
                           placeholder="10"
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 pr-10 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                          className="w-full bg-[#262626] border border-[#333] rounded-2xl py-4 px-4 pr-12 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                           min={0}
                           max={11}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">in</span>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B]">in</span>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Height (cm)</label>
+                  <label className="block text-[#A1A1A1] text-sm mb-2">Height (cm)</label>
                   <input
                     type="number"
                     value={formData.height ?? ''}
                     onChange={(e) => setFormData({ ...formData, height: e.target.value ? parseFloat(e.target.value) : null })}
-                    placeholder="Enter height in centimeters"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                    placeholder="170"
+                    className="w-full bg-[#262626] border border-[#333] rounded-2xl py-4 px-4 text-[#FAFAFA] placeholder-[#6B6B6B] focus:outline-none focus:border-[#F97066] transition-colors"
                     step="0.1"
                   />
                 </div>
@@ -401,67 +370,64 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
         {currentStep === 'activity' && (
           <StepContent
-            icon={<Activity size={32} />}
-            title="Activity Level"
-            subtitle="How active are you on a typical week?"
+            icon={<Activity size={28} />}
+            title="Activity & goals"
+            subtitle="Almost there! Just two more choices"
           >
-            <div className="space-y-3">
-              {(Object.keys(ACTIVITY_DESCRIPTIONS) as ActivityLevel[]).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setFormData({ ...formData, activityLevel: level })}
-                  className={`w-full text-left py-3 px-4 rounded-xl border transition-colors ${
-                    formData.activityLevel === level
-                      ? 'bg-emerald-500/20 border-emerald-500'
-                      : 'bg-zinc-800 border-zinc-700'
-                  }`}
-                >
-                  <div className={formData.activityLevel === level ? 'text-emerald-500' : 'text-white'}>
-                    {level.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                  </div>
-                  <div className="text-gray-500 text-sm">{ACTIVITY_DESCRIPTIONS[level]}</div>
-                </button>
-              ))}
-            </div>
-          </StepContent>
-        )}
+            <div className="space-y-6">
+              <div>
+                <label className="block text-[#A1A1A1] text-sm mb-3">How active are you?</label>
+                <div className="space-y-2">
+                  {(Object.keys(ACTIVITY_DESCRIPTIONS) as ActivityLevel[]).map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setFormData({ ...formData, activityLevel: level })}
+                      className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all ${
+                        formData.activityLevel === level
+                          ? 'bg-[#F97066]/10 border-[#F97066]'
+                          : 'bg-[#262626] border-[#333] hover:border-[#404040]'
+                      }`}
+                    >
+                      <div className={`font-medium ${formData.activityLevel === level ? 'text-[#F97066]' : 'text-[#FAFAFA]'}`}>
+                        {level.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </div>
+                      <div className="text-[#6B6B6B] text-sm">{ACTIVITY_DESCRIPTIONS[level]}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        {currentStep === 'goal' && (
-          <StepContent
-            icon={<Target size={32} />}
-            title="What's your goal?"
-            subtitle="We'll adjust your calories accordingly"
-          >
-            <div className="space-y-3">
-              {([
-                { value: 'lose', label: 'Lose Weight', desc: '500 calorie deficit' },
-                { value: 'maintain', label: 'Maintain Weight', desc: 'Match your TDEE' },
-                { value: 'gain', label: 'Build Muscle', desc: '300 calorie surplus' },
-              ] as const).map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setFormData({ ...formData, goal: option.value })}
-                  className={`w-full text-left py-4 px-4 rounded-xl border transition-colors ${
-                    formData.goal === option.value
-                      ? 'bg-emerald-500/20 border-emerald-500'
-                      : 'bg-zinc-800 border-zinc-700'
-                  }`}
-                >
-                  <div className={formData.goal === option.value ? 'text-emerald-500 font-semibold' : 'text-white'}>
-                    {option.label}
-                  </div>
-                  <div className="text-gray-500 text-sm">{option.desc}</div>
-                </button>
-              ))}
+              <div>
+                <label className="block text-[#A1A1A1] text-sm mb-3">What's your goal?</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'lose', label: 'Lose', emoji: '' },
+                    { value: 'maintain', label: 'Maintain', emoji: '' },
+                    { value: 'gain', label: 'Gain', emoji: '' },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setFormData({ ...formData, goal: option.value })}
+                      className={`py-4 px-3 rounded-xl border-2 transition-all ${
+                        formData.goal === option.value
+                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
+                          : 'bg-[#262626] border-[#333] text-[#A1A1A1] hover:border-[#404040]'
+                      }`}
+                    >
+                      <div className="text-lg font-semibold">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </StepContent>
         )}
 
         {currentStep === 'summary' && (
           <StepContent
-            icon={<Check size={32} />}
-            title="Your Plan"
-            subtitle={`Great job, ${formData.name}! Here's your personalized plan`}
+            icon={<Check size={28} />}
+            title="Your personalized plan"
+            subtitle={`Here's what we've calculated for you, ${formData.name}`}
           >
             {(() => {
               const preview = getPreviewValues()
@@ -469,33 +435,25 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
               return (
                 <div className="space-y-4">
-                  <div className="bg-zinc-800 rounded-xl p-4">
-                    <div className="text-gray-400 text-sm mb-1">Daily Calories</div>
-                    <div className="text-3xl font-bold text-emerald-500">
+                  {/* Daily calories - hero card */}
+                  <div className="bg-gradient-to-br from-[#F97066]/20 to-[#FEB8B0]/10 rounded-3xl p-6 border border-[#F97066]/20">
+                    <div className="text-[#A1A1A1] text-sm mb-1">Daily Calorie Target</div>
+                    <div className="text-5xl font-bold text-[#FAFAFA] mb-1">
                       {preview.dailyTargets.calories.toLocaleString()}
                     </div>
-                    <div className="text-gray-500 text-xs">
-                      BMR: {preview.bmr} | TDEE: {preview.tdee}
-                    </div>
+                    <div className="text-[#F97066]">calories per day</div>
                   </div>
 
+                  {/* Macros */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-zinc-800 rounded-xl p-3 text-center">
-                      <div className="text-gray-400 text-xs mb-1">Protein</div>
-                      <div className="text-xl font-bold text-white">{preview.dailyTargets.protein}g</div>
-                      <div className="text-gray-500 text-xs">{preview.macroSplit.protein}%</div>
-                    </div>
-                    <div className="bg-zinc-800 rounded-xl p-3 text-center">
-                      <div className="text-gray-400 text-xs mb-1">Carbs</div>
-                      <div className="text-xl font-bold text-white">{preview.dailyTargets.carbs}g</div>
-                      <div className="text-gray-500 text-xs">{preview.macroSplit.carbs}%</div>
-                    </div>
-                    <div className="bg-zinc-800 rounded-xl p-3 text-center">
-                      <div className="text-gray-400 text-xs mb-1">Fat</div>
-                      <div className="text-xl font-bold text-white">{preview.dailyTargets.fat}g</div>
-                      <div className="text-gray-500 text-xs">{preview.macroSplit.fat}%</div>
-                    </div>
+                    <MacroPreview label="Protein" value={preview.dailyTargets.protein} color="#F472B6" />
+                    <MacroPreview label="Carbs" value={preview.dailyTargets.carbs} color="#FBBF24" />
+                    <MacroPreview label="Fat" value={preview.dailyTargets.fat} color="#60A5FA" />
                   </div>
+
+                  <p className="text-[#6B6B6B] text-sm text-center pt-2">
+                    You can adjust these anytime in settings
+                  </p>
                 </div>
               )
             })()}
@@ -508,7 +466,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
         {!isFirstStep && (
           <button
             onClick={goBack}
-            className="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-gray-400 flex items-center justify-center gap-2"
+            className="flex-1 py-4 px-4 rounded-2xl border border-[#333] text-[#A1A1A1] flex items-center justify-center gap-2 hover:bg-[#262626] transition-colors"
           >
             <ChevronLeft size={20} />
             Back
@@ -519,16 +477,16 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
           <button
             onClick={handleComplete}
             disabled={!canProceed() || saving}
-            className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-black font-semibold flex items-center justify-center gap-2"
+            className="flex-1 py-4 px-4 rounded-2xl btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                Saving...
+                Creating plan...
               </>
             ) : (
               <>
-                Get Started
+                Start Tracking
                 <ChevronRight size={20} />
               </>
             )}
@@ -537,9 +495,9 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
           <button
             onClick={goNext}
             disabled={!canProceed()}
-            className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-black font-semibold flex items-center justify-center gap-2"
+            className="flex-1 py-4 px-4 rounded-2xl btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {currentStep === 'welcome' ? "Let's Go" : 'Continue'}
+            Continue
             <ChevronRight size={20} />
           </button>
         )}
@@ -557,11 +515,40 @@ interface StepContentProps {
 
 function StepContent({ icon, title, subtitle, children }: StepContentProps) {
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="text-emerald-500 mb-4">{icon}</div>
-      <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
-      <p className="text-gray-400 mb-6">{subtitle}</p>
+    <div className="flex-1 flex flex-col animate-fade-in">
+      <div className="text-[#F97066] mb-4">{icon}</div>
+      <h1 className="text-2xl font-bold text-[#FAFAFA] mb-2">{title}</h1>
+      <p className="text-[#A1A1A1] mb-6">{subtitle}</p>
       <div className="flex-1">{children}</div>
+    </div>
+  )
+}
+
+interface MiniFeatureProps {
+  icon: React.ReactNode
+  text: string
+}
+
+function MiniFeature({ icon, text }: MiniFeatureProps) {
+  return (
+    <div className="flex items-center gap-3 text-[#A1A1A1]">
+      <div className="text-[#F97066]">{icon}</div>
+      <span className="text-sm">{text}</span>
+    </div>
+  )
+}
+
+interface MacroPreviewProps {
+  label: string
+  value: number
+  color: string
+}
+
+function MacroPreview({ label, value, color }: MacroPreviewProps) {
+  return (
+    <div className="bg-[#262626] rounded-2xl p-4 text-center border border-[#333]">
+      <div className="text-2xl font-bold text-[#FAFAFA]">{value}g</div>
+      <div className="text-sm" style={{ color }}>{label}</div>
     </div>
   )
 }

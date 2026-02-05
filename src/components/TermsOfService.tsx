@@ -138,7 +138,7 @@ export function TermsOfService({ onBack }: TermsOfServiceProps) {
             <h2 className="text-lg font-semibold text-white mb-3">11. Contact Us</h2>
             <p className="leading-relaxed">
               If you have any questions about these Terms of Service, please contact us at{' '}
-              <span className="text-emerald-500">support@macrolens.app</span>
+              <span className="text-[#F97066]">support@macrolens.app</span>
             </p>
           </section>
         </div>
