@@ -44,18 +44,24 @@ export interface FoodAnalysisResult {
 
 const FOOD_ANALYSIS_PROMPT = `You are a nutrition expert analyzing a food image. Identify all food items visible and estimate their nutritional content.
 
-IMPORTANT PORTION GUIDANCE:
-- Photos lack scale reference, so estimate portions CONSERVATIVELY (lean toward smaller estimates)
-- Include estimated weight in grams when possible (e.g., "1 medium chicken breast (~140g)")
-- Use standard USDA serving sizes as your baseline when uncertain
-- For packaged foods, assume 1 standard serving unless clearly more or less
-- Common reference: palm of hand ≈ 3oz meat, fist ≈ 1 cup, thumb ≈ 1 tbsp
+CRITICAL PORTION RULES — READ CAREFULLY:
+Photos make food look larger than it is. You MUST actively correct for this bias.
+
+1. UNDERESTIMATE by 20%: After your initial estimate, reduce all portion sizes by 20%. This corrects for the camera magnification bias.
+2. USE THE SMALLEST REASONABLE PORTION: When uncertain, ask yourself "what is the smallest this could realistically be?" and use that.
+3. ASSUME STANDARD PLATE SIZES: A dinner plate is 10 inches. A bowl is 6 inches. A mug is 8oz. Use these to judge relative food size — food on a plate is smaller than it appears.
+4. DEFAULT TO SINGLE USDA SERVINGS: Unless the portion is clearly larger, default to 1 USDA standard serving size.
+5. FOR MEAT AND PROTEIN: Most home-cooked portions are 3-5oz, NOT 6-8oz. A chicken breast is typically 4oz cooked. A steak at home is 4-6oz, not 8-12oz.
+6. FOR PACKAGED FOODS: Always assume exactly 1 serving unless clearly more.
+7. CALORIE CROSS-CHECK: After estimating all items, check the total. A typical home meal is 400-700 calories. A restaurant meal is 600-1200 calories. A snack is 100-300 calories. If your total exceeds these ranges, your portions are too large — reduce them.
+
+Include estimated weight in grams for every item (e.g., "1 chicken breast (~115g)").
 
 IMPORTANT: If you see any OPTAVIA, OPTAVIA ACTIVE, OPTAVIA ASCEND, or Essential1 products, include the brand and exact product name in your response. We have verified nutritional data for these products.
 
 For each food item, provide:
 1. Name of the food (include brand name if visible, e.g., "OPTAVIA Chocolate Mint Cookie Crisp Bar")
-2. Estimated quantity/portion size with weight in grams when possible
+2. Estimated quantity/portion size with weight in grams
 3. Estimated calories
 4. Protein (grams)
 5. Carbohydrates (grams)
@@ -67,7 +73,7 @@ Respond ONLY with valid JSON in this exact format:
   "items": [
     {
       "name": "Food name",
-      "quantity": "1 cup (~150g) / 4 oz (~113g) / 1 medium piece (~100g)",
+      "quantity": "1 piece (~115g)",
       "calories": 200,
       "protein": 10,
       "carbs": 25,
@@ -164,17 +170,21 @@ export async function analyzeFoodImage(imageBase64: string, mimeType: string = '
 
 const TEXT_ANALYSIS_PROMPT = `You are a nutrition expert. The user will describe food they ate. Analyze the description and estimate nutritional content.
 
-IMPORTANT PORTION GUIDANCE:
-- Estimate portions CONSERVATIVELY when not specified
-- Use standard USDA serving sizes as your baseline
-- If user says "some" or doesn't specify amount, use a single standard serving
-- Include estimated weight in grams when possible (e.g., "1 medium chicken breast (~140g)")
+CRITICAL PORTION RULES:
+1. DEFAULT TO SMALL PORTIONS: When the user doesn't specify an amount, use the smallest standard USDA serving size. "Some chicken" = 3oz (~85g). "A bowl of rice" = 1 cup cooked (~160g). "A steak" = 4oz (~115g).
+2. TAKE USER QUANTITIES LITERALLY: If they say "4oz steak," use exactly 4oz — do not round up.
+3. FOR VAGUE DESCRIPTIONS ("some," "a little," "a bit"): Use half a standard serving.
+4. FOR UNSPECIFIED AMOUNTS: Use exactly 1 USDA standard serving, not more.
+5. FOR MEAT AND PROTEIN: Default to 3-4oz portions for home cooking unless the user specifies otherwise.
+6. CALORIE CROSS-CHECK: A typical home meal is 400-700 calories. A restaurant meal is 600-1200 calories. A snack is 100-300 calories. If your total exceeds these ranges, reduce portion sizes.
+
+Include estimated weight in grams for every item.
 
 IMPORTANT: If the user mentions OPTAVIA, OPTAVIA ACTIVE, OPTAVIA ASCEND, or Essential1 products, include the brand and product name. We have verified nutritional data for these products.
 
 For each food item mentioned, provide:
 1. Name of the food (include brand if mentioned, e.g., "OPTAVIA Creamy Chocolate Shake Mix")
-2. Estimated quantity/portion size with weight in grams when possible
+2. Estimated quantity/portion size with weight in grams
 3. Estimated calories
 4. Protein (grams)
 5. Carbohydrates (grams)
@@ -186,7 +196,7 @@ Respond ONLY with valid JSON in this exact format:
   "items": [
     {
       "name": "Food name",
-      "quantity": "1 cup (~150g) / 4 oz (~113g) / 1 medium piece (~100g)",
+      "quantity": "1 piece (~115g)",
       "calories": 200,
       "protein": 10,
       "carbs": 25,

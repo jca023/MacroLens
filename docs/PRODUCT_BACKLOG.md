@@ -104,15 +104,20 @@ Separate product tier for nutrition coaches. Coaches view client meal logs, weig
 
 ### AI Portion Estimation Improvements
 
-**Status:** Plan exists (see plans/dapper-dreaming-blossom.md)
+**Status:** Implemented (see plans/2026-02-20-portion-accuracy-design.md)
 
 **Description:**
-Gemini portion estimates are ~10-20% off. Improve prompts for more conservative estimates, include weight-in-grams alongside descriptive quantities, use USDA serving sizes as baseline.
+Gemini portion estimates were ~10-20% off due to camera magnification bias. Rewrote prompts with explicit 20% underestimation correction, smallest-reasonable-portion anchoring, standard plate sizing, and calorie cross-check validation.
 
-**TODO:**
-- [ ] Update Gemini prompt with conservative estimation guidance
-- [ ] Include gram estimates in quantity strings
-- [ ] Reference object detection for scale reference (future)
+**DONE:**
+- [x] Update Gemini prompt with aggressive underestimation bias
+- [x] Include gram estimates in quantity strings
+- [x] Add calorie cross-check for meal type ranges
+- [x] Remove misleading palm/fist reference hints
+
+**FUTURE:**
+- [ ] AI feedback loop: store user corrections and use aggregate data to improve estimates over time
+- [ ] Reference object detection for scale reference
 
 ---
 
