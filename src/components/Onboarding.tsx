@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Loader2, User, Activity, Scale, Check, Utensils, Camera, Sparkles, TrendingUp } from 'lucide-react'
-import type { ActivityLevel, Goal, Profile } from '../types'
+import type { ActivityLevel, Profile } from '../types'
 import {
   calculateBMR,
   calculateTDEE,
@@ -8,7 +8,7 @@ import {
   calculateDailyTargets,
   convertWeight,
   convertHeight,
-  DEFAULT_MACRO_SPLITS,
+  DEFAULT_MACRO_SPLIT,
   ACTIVITY_DESCRIPTIONS,
 } from '../services/nutritionService'
 
@@ -31,7 +31,6 @@ interface FormData {
   heightInches: number | null
   unitSystem: 'metric' | 'imperial'
   activityLevel: ActivityLevel | null
-  goal: Goal | null
 }
 
 export function Onboarding({ userId, onComplete }: OnboardingProps) {
@@ -47,7 +46,6 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
     heightInches: null,
     unitSystem: 'imperial',
     activityLevel: null,
-    goal: null,
   })
 
   const currentIndex = STEPS.indexOf(currentStep)
@@ -67,7 +65,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
         }
         return formData.height !== null && formData.height > 0
       case 'activity':
-        return formData.activityLevel !== null && formData.goal !== null
+        return formData.activityLevel !== null
       case 'summary':
         return true
       default:
@@ -88,7 +86,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
   }
 
   const handleComplete = async () => {
-    if (!formData.name || !formData.age || !formData.gender || !formData.weight || !formData.activityLevel || !formData.goal) {
+    if (!formData.name || !formData.age || !formData.gender || !formData.weight || !formData.activityLevel) {
       return
     }
 
@@ -112,9 +110,8 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
     const bmr = calculateBMR(weightKg, heightCm, formData.age, formData.gender)
     const tdee = calculateTDEE(bmr, formData.activityLevel)
-    const macroSplit = DEFAULT_MACRO_SPLITS[formData.goal]
-    const targetCalories = calculateTargetCalories(tdee, formData.goal)
-    const dailyTargets = calculateDailyTargets(targetCalories, macroSplit)
+    const targetCalories = calculateTargetCalories(bmr, tdee)
+    const dailyTargets = calculateDailyTargets(targetCalories, DEFAULT_MACRO_SPLIT)
 
     const profile: Omit<Profile, 'created_at' | 'updated_at'> = {
       id: userId,
@@ -124,10 +121,10 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
       weight: formData.weight,
       height: heightValue,
       activity_level: formData.activityLevel,
-      goal: formData.goal,
+      goal: 'maintain',
       unit_system: formData.unitSystem,
       show_ingredient_race: true,
-      macro_split: macroSplit,
+      macro_split: DEFAULT_MACRO_SPLIT,
       bmr,
       tdee,
       daily_targets: dailyTargets,
@@ -149,7 +146,7 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
   }
 
   const getPreviewValues = () => {
-    if (!formData.age || !formData.gender || !formData.weight || !formData.activityLevel || !formData.goal) {
+    if (!formData.age || !formData.gender || !formData.weight || !formData.activityLevel) {
       return null
     }
 
@@ -171,11 +168,10 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
 
     const bmr = calculateBMR(weightKg, heightCm, formData.age, formData.gender)
     const tdee = calculateTDEE(bmr, formData.activityLevel)
-    const macroSplit = DEFAULT_MACRO_SPLITS[formData.goal]
-    const targetCalories = calculateTargetCalories(tdee, formData.goal)
-    const dailyTargets = calculateDailyTargets(targetCalories, macroSplit)
+    const targetCalories = calculateTargetCalories(bmr, tdee)
+    const dailyTargets = calculateDailyTargets(targetCalories, DEFAULT_MACRO_SPLIT)
 
-    return { bmr, tdee, dailyTargets, macroSplit }
+    return { bmr, tdee, dailyTargets }
   }
 
   return (
@@ -371,53 +367,28 @@ export function Onboarding({ userId, onComplete }: OnboardingProps) {
         {currentStep === 'activity' && (
           <StepContent
             icon={<Activity size={28} />}
-            title="Activity & goals"
-            subtitle="Almost there! Just two more choices"
+            title="Activity level"
+            subtitle="Almost there! Just one more choice"
           >
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[#A1A1A1] text-sm mb-3">How active are you?</label>
-                <div className="space-y-2">
-                  {(Object.keys(ACTIVITY_DESCRIPTIONS) as ActivityLevel[]).map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => setFormData({ ...formData, activityLevel: level })}
-                      className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all ${
-                        formData.activityLevel === level
-                          ? 'bg-[#F97066]/10 border-[#F97066]'
-                          : 'bg-[#262626] border-[#333] hover:border-[#404040]'
-                      }`}
-                    >
-                      <div className={`font-medium ${formData.activityLevel === level ? 'text-[#F97066]' : 'text-[#FAFAFA]'}`}>
-                        {level.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                      </div>
-                      <div className="text-[#6B6B6B] text-sm">{ACTIVITY_DESCRIPTIONS[level]}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[#A1A1A1] text-sm mb-3">What's your goal?</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    { value: 'lose', label: 'Lose', emoji: '' },
-                    { value: 'maintain', label: 'Maintain', emoji: '' },
-                    { value: 'gain', label: 'Gain', emoji: '' },
-                  ] as const).map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => setFormData({ ...formData, goal: option.value })}
-                      className={`py-4 px-3 rounded-xl border-2 transition-all ${
-                        formData.goal === option.value
-                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
-                          : 'bg-[#262626] border-[#333] text-[#A1A1A1] hover:border-[#404040]'
-                      }`}
-                    >
-                      <div className="text-lg font-semibold">{option.label}</div>
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <label className="block text-[#A1A1A1] text-sm mb-3">How active are you?</label>
+              <div className="space-y-2">
+                {(Object.keys(ACTIVITY_DESCRIPTIONS) as ActivityLevel[]).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setFormData({ ...formData, activityLevel: level })}
+                    className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all ${
+                      formData.activityLevel === level
+                        ? 'bg-[#F97066]/10 border-[#F97066]'
+                        : 'bg-[#262626] border-[#333] hover:border-[#404040]'
+                    }`}
+                  >
+                    <div className={`font-medium ${formData.activityLevel === level ? 'text-[#F97066]' : 'text-[#FAFAFA]'}`}>
+                      {level.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </div>
+                    <div className="text-[#6B6B6B] text-sm">{ACTIVITY_DESCRIPTIONS[level]}</div>
+                  </button>
+                ))}
               </div>
             </div>
           </StepContent>

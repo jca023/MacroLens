@@ -11,10 +11,10 @@ import {
   calculateDailyTargets,
   convertWeight,
   convertHeight,
-  DEFAULT_MACRO_SPLITS,
+  DEFAULT_MACRO_SPLIT,
   ACTIVITY_DESCRIPTIONS,
 } from '../services/nutritionService'
-import type { Profile, ActivityLevel, Goal } from '../types'
+import type { Profile, ActivityLevel, MacroSplit } from '../types'
 
 interface SettingsProps {
   profile: Profile
@@ -34,7 +34,7 @@ interface FormData {
   heightInches: number
   unitSystem: 'metric' | 'imperial'
   activityLevel: ActivityLevel
-  goal: Goal
+  macroSplit: MacroSplit
 }
 
 export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSignOut }: SettingsProps) {
@@ -58,7 +58,7 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
     heightInches: initialHeightInches,
     unitSystem: profile.unit_system,
     activityLevel: profile.activity_level || 'moderate',
-    goal: profile.goal || 'maintain',
+    macroSplit: profile.macro_split || { ...DEFAULT_MACRO_SPLIT },
   })
 
   const [saving, setSaving] = useState(false)
@@ -110,11 +110,10 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
 
     const bmr = calculateBMR(weightKg, heightCm, formData.age, formData.gender)
     const tdee = calculateTDEE(bmr, formData.activityLevel)
-    const macroSplit = DEFAULT_MACRO_SPLITS[formData.goal]
-    const targetCalories = calculateTargetCalories(tdee, formData.goal)
-    const dailyTargets = calculateDailyTargets(targetCalories, macroSplit)
+    const targetCalories = calculateTargetCalories(bmr, tdee)
+    const dailyTargets = calculateDailyTargets(targetCalories, formData.macroSplit)
 
-    return { bmr, tdee, macroSplit, dailyTargets }
+    return { bmr, tdee, dailyTargets }
   }
 
   const handleSave = async () => {
@@ -126,7 +125,7 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
     setSaving(true)
     setError(null)
 
-    const { bmr, tdee, macroSplit, dailyTargets } = getCalculatedValues()
+    const { bmr, tdee, dailyTargets } = getCalculatedValues()
     const heightValue = formData.unitSystem === 'imperial'
       ? formData.heightFeet * 12 + formData.heightInches
       : formData.height
@@ -140,10 +139,10 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
         height: heightValue,
         unit_system: formData.unitSystem,
         activity_level: formData.activityLevel,
-        goal: formData.goal,
+        goal: 'maintain',
         bmr,
         tdee,
-        macro_split: macroSplit,
+        macro_split: formData.macroSplit,
         daily_targets: dailyTargets,
       })
       onProfileUpdated(updated)
@@ -297,11 +296,11 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
             </div>
           </section>
 
-          {/* Activity & Goal */}
+          {/* Activity & Macro Split */}
           <section>
             <h3 className="text-sm font-medium text-[#A1A1A1] mb-3 flex items-center gap-2">
               <Activity size={16} />
-              Activity & Goal
+              Activity & Macro Split
             </h3>
             <div className="bg-[#262626] rounded-2xl p-4 border border-[#333] space-y-4">
               <div>
@@ -326,26 +325,40 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-[#6B6B6B] mb-2">Goal</label>
-                <div className="flex gap-2">
+                <label className="block text-xs text-[#6B6B6B] mb-2">Macro Split</label>
+                <div className="space-y-2">
                   {([
-                    { value: 'lose', label: 'Lose' },
-                    { value: 'maintain', label: 'Maintain' },
-                    { value: 'gain', label: 'Gain' },
-                  ] as const).map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => setFormData({ ...formData, goal: option.value })}
-                      className={`flex-1 py-3 rounded-xl border-2 transition-all text-sm ${
-                        formData.goal === option.value
-                          ? 'bg-[#F97066]/10 border-[#F97066] text-[#F97066]'
-                          : 'bg-[#333] border-[#404040] text-[#A1A1A1] hover:border-[#6B6B6B]'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
+                    { key: 'protein' as const, label: 'Protein', color: 'text-[#F472B6]' },
+                    { key: 'carbs' as const, label: 'Carbs', color: 'text-[#FBBF24]' },
+                    { key: 'fat' as const, label: 'Fat', color: 'text-[#60A5FA]' },
+                  ]).map((macro) => (
+                    <div key={macro.key} className="flex items-center gap-3">
+                      <span className={`text-sm font-medium w-16 ${macro.color}`}>{macro.label}</span>
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          value={formData.macroSplit[macro.key]}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            macroSplit: { ...formData.macroSplit, [macro.key]: parseInt(e.target.value) || 0 }
+                          })}
+                          className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-2.5 pr-8 text-[#FAFAFA] text-sm focus:outline-none focus:border-[#F97066] transition-colors"
+                          min={0}
+                          max={100}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-sm">%</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
+                {(() => {
+                  const total = formData.macroSplit.protein + formData.macroSplit.carbs + formData.macroSplit.fat
+                  return (
+                    <div className={`text-xs mt-2 text-right ${total === 100 ? 'text-[#6B6B6B]' : 'text-[#F87171]'}`}>
+                      Total: {total}%{total !== 100 && ' — must equal 100%'}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </section>

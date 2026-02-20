@@ -10,9 +10,3 @@ export const ACTIVITY_MULTIPLIERS = {
   very_active: 1.9,
 } as const
 
-// Goal calorie adjustments
-export const GOAL_ADJUSTMENTS = {
-  lose: -500,      // 500 calorie deficit
-  maintain: 0,
-  gain: 300,       // 300 calorie surplus
-} as const

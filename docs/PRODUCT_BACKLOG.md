@@ -35,14 +35,17 @@ Freemium model using Polar for international payment processing. Usage tracked w
 
 ### Sign-In Flow Fix
 
-**Status:** Ready for implementation
+**Status:** Implemented (see plans/2026-02-20-signin-flow-fix-design.md)
 
 **Description:**
-Current sign-in page is confusing for new users. No clear distinction between sign-in and sign-up. Users don't know if they need to create an account first.
+Sign-in page said "Sign in" which confused new users into thinking they needed a separate sign-up. Replaced with unified "Welcome" flow — OTP handles both new and returning users automatically.
 
-**TODO:**
-- [ ] Clarify sign-in vs sign-up messaging
-- [ ] Add "New here?" / "Already have an account?" toggle or context
+**DONE:**
+- [x] Changed heading from "Sign in" to "Welcome"
+- [x] Changed subtext to "Enter your email to get started"
+- [x] Changed button from "Let's Go!" to "Continue"
+- [x] Simplified toggle text ("Use password instead" / "Use email code instead")
+- [x] Added reassuring footer: "New or returning — we'll send you a secure code"
 
 ---
 
@@ -50,17 +53,22 @@ Current sign-in page is confusing for new users. No clear distinction between si
 
 ### Scale Photo AI Reading
 
-**Status:** Designed - ready for implementation
+**Status:** Implemented
 
 **Description:**
-Snap a photo of any scale (smart or dumb), Gemini AI reads the displayed weight and logs it. Simplest approach - works with any scale, no API integrations needed, consistent with the "snap a photo" UX.
+Snap a photo of any scale (smart or dumb), Gemini AI reads the displayed weight and logs it. Works with digital and analog scales. Includes manual entry fallback.
 
-**TODO:**
-- [ ] Build scale photo capture UI
-- [ ] Add Gemini prompt for reading scale displays
-- [ ] Store weight entries in database with timestamps
+**DONE:**
+- [x] Scale photo capture UI (camera + upload + manual entry)
+- [x] Gemini prompt for reading digital and analog scale displays
+- [x] Weight entries stored in `weight_entries` table with timestamps
+- [x] Confidence level display (high/medium/low)
+- [x] Weight change indicator (vs last recorded)
+- [x] Notes field for weigh-ins
+- [x] Coach request integration ("Send to Coach" weigh-in flow)
+
+**FUTURE:**
 - [ ] Weight trend chart for progress tracking
-- [ ] "Send to Coach" option for weigh-ins
 
 ---
 
@@ -193,6 +201,9 @@ Scan drinks at bars or restaurants to log alcohol and mixers with accurate nutri
 - [x] Landing page
 - [x] Terms of Service and Privacy Policy
 - [x] Favicon (fork & knife SVG)
+- [x] Sign-in flow UX fix (Welcome page, unified new/returning user flow)
+- [x] Scale photo AI reading (camera, AI analysis, manual entry, coach integration)
+- [x] AI portion accuracy improvements (underestimation bias, calorie cross-check)
 
 ---
 

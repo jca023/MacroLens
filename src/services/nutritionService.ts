@@ -1,5 +1,5 @@
-import type { ActivityLevel, Goal, MacroSplit, DailyTargets } from '../types'
-import { ACTIVITY_MULTIPLIERS, GOAL_ADJUSTMENTS } from '../types'
+import type { ActivityLevel, MacroSplit, DailyTargets } from '../types'
+import { ACTIVITY_MULTIPLIERS } from '../types'
 
 /**
  * Calculate Basal Metabolic Rate using Mifflin-St Jeor equation
@@ -37,13 +37,13 @@ export function calculateTDEE(bmr: number, activityLevel: ActivityLevel): number
 }
 
 /**
- * Calculate daily calorie target based on goal
+ * Calculate daily calorie target as midpoint between BMR and TDEE
+ * @param bmr - Basal Metabolic Rate
  * @param tdee - Total Daily Energy Expenditure
- * @param goal - User's goal (lose, maintain, gain)
  * @returns Target calories/day
  */
-export function calculateTargetCalories(tdee: number, goal: Goal): number {
-  return tdee + GOAL_ADJUSTMENTS[goal]
+export function calculateTargetCalories(bmr: number, tdee: number): number {
+  return Math.round(bmr + ((tdee - bmr) / 2))
 }
 
 /**
@@ -90,13 +90,9 @@ export function convertHeight(value: number, from: 'cm' | 'in', to: 'cm' | 'in')
 }
 
 /**
- * Default macro split percentages
+ * Default macro split percentages (coach-recommended)
  */
-export const DEFAULT_MACRO_SPLITS: Record<Goal, MacroSplit> = {
-  lose: { protein: 40, carbs: 30, fat: 30 },      // Higher protein for muscle retention
-  maintain: { protein: 30, carbs: 40, fat: 30 },  // Balanced
-  gain: { protein: 30, carbs: 45, fat: 25 },      // Higher carbs for energy
-}
+export const DEFAULT_MACRO_SPLIT: MacroSplit = { protein: 40, carbs: 40, fat: 20 }
 
 /**
  * Activity level descriptions
