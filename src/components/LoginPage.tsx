@@ -212,10 +212,10 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
         ) : (
           // Input state
           <>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-1">Sign in</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-1">Welcome</h2>
             <p className="text-[#A1A1A1] text-sm mb-6">
               {authMode === 'otp'
-                ? 'Enter your email to receive a code'
+                ? 'Enter your email to get started'
                 : 'Enter your email and password'}
             </p>
 
@@ -268,7 +268,7 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
                     <span>{authMode === 'otp' ? 'Sending...' : 'Signing in...'}</span>
                   </>
                 ) : (
-                  <span>{authMode === 'otp' ? "Let's Go!" : 'Sign In'}</span>
+                  <span>{authMode === 'otp' ? 'Continue' : 'Sign In'}</span>
                 )}
               </button>
             </form>
@@ -280,8 +280,8 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
                 className="text-[#6B6B6B] hover:text-[#A1A1A1] text-sm transition-colors"
               >
                 {authMode === 'otp'
-                  ? 'Sign in with password instead'
-                  : 'Sign in with email code instead'}
+                  ? 'Use password instead'
+                  : 'Use email code instead'}
               </button>
             </div>
           </>
@@ -291,7 +291,7 @@ export function LoginPage({ onSignInWithPassword, onSendOtp, onVerifyOtp }: Logi
       {/* Footer */}
       <p className="text-[#6B6B6B] text-xs mt-6 text-center">
         {authMode === 'otp'
-          ? 'Sign in securely with a one-time code'
+          ? 'New or returning \u2014 we\u2019ll send you a secure code'
           : 'Sign in with your account'}
       </p>
     </div>
