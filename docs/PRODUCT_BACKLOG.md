@@ -72,19 +72,26 @@ Snap a photo of any scale (smart or dumb), Gemini AI reads the displayed weight 
 
 ---
 
-### Smart Scale API Integration
+### Smart Scale API Integration (RENPHO)
 
 **Status:** Researched - future enhancement
 
 **Description:**
-Direct integration with smart scale APIs for automatic weight syncing. Best option is Withings Health Mate API (OAuth 2.0, well-documented). Fitbit Aria also viable. Most affordable scales (Renpho, Eufy) have no public API and require Apple Health/Google Health Connect as intermediary.
+Direct integration with RENPHO smart scales (~$20 on Amazon, widely recommended by diet coaches for clients). RENPHO scales sync via Bluetooth to the RENPHO app, but have no public API. Data can only be accessed through Apple Health / Google Health Connect as intermediaries.
 
 **Why it's lower priority:** AI photo reading covers the use case without integration overhead. This becomes valuable for users who want fully automatic syncing.
 
-**Open questions:**
-- Worth the integration cost for v1?
-- Apple HealthKit / Google Health Connect requires native or hybrid app
-- Withings partner application approval process
+**Challenges:**
+- RENPHO has no public API — requires Apple HealthKit or Google Health Connect as intermediary
+- Apple HealthKit / Google Health Connect requires a native or hybrid app (not web-only)
+- Would need to wrap MacroLens in Capacitor/React Native or build a companion mobile app
+- Alternative: RENPHO data exports to CSV (manual but functional)
+
+**Potential approaches:**
+1. **Capacitor wrapper** — Wrap existing web app, add HealthKit/Health Connect plugin for scale data
+2. **Companion mobile app** — Lightweight native app just for scale sync, pushes data to Supabase
+3. **Manual CSV import** — Let users export from RENPHO app and upload to MacroLens
+4. **Keep AI photo reading** — Current approach works without any integration overhead
 
 ---
 
@@ -151,29 +158,6 @@ The UI and scanner were implemented, but without a comprehensive barcode databas
 
 ---
 
-### Bar/Restaurant Drink Scanning
-
-**Status:** Idea - needs research
-
-**Description:**
-Scan drinks at bars or restaurants to log alcohol and mixers with accurate nutritional data.
-
-**Open questions:**
-- What would be scanned? Menu QR codes? Drink labels?
-- Would this integrate with bar/restaurant POS systems?
-- How to handle custom cocktails vs. standard drinks?
-- Alcohol calorie calculation is straightforward (7 cal/gram), but mixers vary widely
-
-**Potential approaches:**
-1. Partner with bar/restaurant chains for menu data
-2. Build a cocktail recipe database with standard pours
-3. AI recognition of drink type + manual confirmation
-4. Integration with alcohol brand databases
-
-**Why this is valuable:** Alcohol is often under-tracked in nutrition apps, and bar drinks are especially hard to estimate accurately.
-
----
-
 ### Additional Ideas
 
 - [ ] **Meal Templates / Favorites** - Quick-log frequently eaten meals
@@ -204,6 +188,7 @@ Scan drinks at bars or restaurants to log alcohol and mixers with accurate nutri
 - [x] Sign-in flow UX fix (Welcome page, unified new/returning user flow)
 - [x] Scale photo AI reading (camera, AI analysis, manual entry, coach integration)
 - [x] AI portion accuracy improvements (underestimation bias, calorie cross-check)
+- [x] Editable macro split (replaced Lose/Maintain/Gain goals with 40/40/20 default, midpoint calorie formula)
 
 ---
 

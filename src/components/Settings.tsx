@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Loader2, Settings as SettingsIcon, LogOut, Check, Activity, Calculator, Users } from 'lucide-react'
+import { X, Loader2, Settings as SettingsIcon, LogOut, Check, Activity, Calculator, Users, ChevronUp, ChevronDown } from 'lucide-react'
 import { updateProfile } from '../services/profileService'
 import { CoachingSection } from './CoachingSection'
 import { GetCoachForm } from './GetCoachForm'
@@ -326,27 +326,39 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
               </div>
               <div>
                 <label className="block text-xs text-[#6B6B6B] mb-2">Macro Split</label>
-                <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
                   {([
-                    { key: 'protein' as const, label: 'Protein', color: 'text-[#F472B6]' },
-                    { key: 'carbs' as const, label: 'Carbs', color: 'text-[#FBBF24]' },
-                    { key: 'fat' as const, label: 'Fat', color: 'text-[#60A5FA]' },
+                    { key: 'protein' as const, label: 'Protein', color: 'text-[#F472B6]', borderColor: 'border-[#F472B6]' },
+                    { key: 'carbs' as const, label: 'Carbs', color: 'text-[#FBBF24]', borderColor: 'border-[#FBBF24]' },
+                    { key: 'fat' as const, label: 'Fat', color: 'text-[#60A5FA]', borderColor: 'border-[#60A5FA]' },
                   ]).map((macro) => (
-                    <div key={macro.key} className="flex items-center gap-3">
-                      <span className={`text-sm font-medium w-16 ${macro.color}`}>{macro.label}</span>
-                      <div className="flex-1 relative">
-                        <input
-                          type="number"
-                          value={formData.macroSplit[macro.key]}
-                          onChange={(e) => setFormData({
+                    <div key={macro.key} className="flex flex-col items-center">
+                      <span className={`text-xs font-medium mb-1.5 ${macro.color}`}>{macro.label}</span>
+                      <div className={`bg-[#333] border ${macro.borderColor}/30 rounded-xl px-2 py-1.5 flex items-center justify-center gap-1 w-full`}>
+                        <span className="text-lg font-bold text-[#FAFAFA] min-w-[2ch] text-center">{formData.macroSplit[macro.key]}</span>
+                        <span className="text-xs text-[#6B6B6B]">%</span>
+                      </div>
+                      <div className="flex gap-1 mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({
                             ...formData,
-                            macroSplit: { ...formData.macroSplit, [macro.key]: parseInt(e.target.value) || 0 }
+                            macroSplit: { ...formData.macroSplit, [macro.key]: Math.min(100, formData.macroSplit[macro.key] + 5) }
                           })}
-                          className="w-full bg-[#333] border border-[#404040] rounded-xl px-4 py-2.5 pr-8 text-[#FAFAFA] text-sm focus:outline-none focus:border-[#F97066] transition-colors"
-                          min={0}
-                          max={100}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-sm">%</span>
+                          className="p-1 rounded-lg bg-[#333] border border-[#404040] text-[#A1A1A1] hover:text-[#FAFAFA] hover:border-[#6B6B6B] active:bg-[#404040] transition-colors"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({
+                            ...formData,
+                            macroSplit: { ...formData.macroSplit, [macro.key]: Math.max(0, formData.macroSplit[macro.key] - 5) }
+                          })}
+                          className="p-1 rounded-lg bg-[#333] border border-[#404040] text-[#A1A1A1] hover:text-[#FAFAFA] hover:border-[#6B6B6B] active:bg-[#404040] transition-colors"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -354,7 +366,7 @@ export function Settings({ profile, userEmail, onClose, onProfileUpdated, onSign
                 {(() => {
                   const total = formData.macroSplit.protein + formData.macroSplit.carbs + formData.macroSplit.fat
                   return (
-                    <div className={`text-xs mt-2 text-right ${total === 100 ? 'text-[#6B6B6B]' : 'text-[#F87171]'}`}>
+                    <div className={`text-xs mt-2 text-center ${total === 100 ? 'text-[#6B6B6B]' : 'text-[#F87171]'}`}>
                       Total: {total}%{total !== 100 && ' — must equal 100%'}
                     </div>
                   )
