@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { LandingPage } from './components/LandingPage'
 import { LoginPage } from './components/LoginPage'
 import { Dashboard } from './components/Dashboard'
+import { CameraView } from './components/CameraView'
 import { Onboarding } from './components/Onboarding'
 import { TermsOfService } from './components/TermsOfService'
 import { PrivacyPolicy } from './components/PrivacyPolicy'
@@ -11,7 +12,7 @@ import { getProfile, upsertProfile } from './services/profileService'
 import type { Profile } from './types'
 import './index.css'
 
-type AppState = 'loading' | 'landing' | 'login' | 'onboarding' | 'dashboard' | 'terms' | 'privacy'
+type AppState = 'loading' | 'landing' | 'login' | 'onboarding' | 'camera' | 'dashboard' | 'terms' | 'privacy'
 
 function App() {
   const { user, loading: authLoading, sendOtp, verifyOtp, signInWithPassword, signOut } = useAuth()
@@ -42,7 +43,7 @@ function App() {
 
         if (isProfileComplete) {
           setProfile(existingProfile)
-          setAppState('dashboard')
+          setAppState('camera')
         } else {
           setAppState('onboarding')
         }
@@ -67,7 +68,7 @@ function App() {
         updated_at: new Date().toISOString(),
       })
       setProfile(newProfile)
-      setAppState('dashboard')
+      setAppState('camera')
     } catch (error) {
       console.error('Error saving profile:', error)
       throw error
@@ -153,6 +154,17 @@ function App() {
     return <Onboarding userId={user.id} onComplete={handleOnboardingComplete} />
   }
 
+  // Show camera view (default after login)
+  if (appState === 'camera' && user && profile) {
+    return (
+      <CameraView
+        userId={profile.id}
+        onMealLogged={() => {}}
+        onGoToDashboard={() => setAppState('dashboard')}
+      />
+    )
+  }
+
   // Show dashboard
   return (
     <Dashboard
@@ -160,6 +172,7 @@ function App() {
       userEmail={user?.email || ''}
       onSignOut={handleSignOut}
       onProfileUpdated={handleProfileUpdated}
+      onGoToCamera={() => setAppState('camera')}
     />
   )
 }

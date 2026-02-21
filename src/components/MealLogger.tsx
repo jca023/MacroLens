@@ -1,29 +1,48 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Camera, Upload, Loader2, Check, AlertCircle, Trash2, MessageSquare, Sparkles } from 'lucide-react'
 import { analyzeFoodImage, analyzeFoodText, type FoodItem } from '../services/geminiService'
 import { createMeal } from '../services/mealService'
 import type { MealInsert } from '../types'
 
+interface PreloadedImage {
+  base64: string
+  mimeType: string
+  previewUrl: string
+}
+
 interface MealLoggerProps {
   userId: string
   onClose: () => void
   onMealLogged: () => void
+  preloadedImage?: PreloadedImage
+  startInTextMode?: boolean
+  onTakeAnother?: () => void
+  onViewDashboard?: () => void
 }
 
 type Step = 'capture' | 'text-input' | 'analyzing' | 'review' | 'saving' | 'success' | 'error'
 type InputMode = 'photo' | 'text'
 
-export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
-  const [step, setStep] = useState<Step>('capture')
-  const [inputMode, setInputMode] = useState<InputMode>('photo')
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+export function MealLogger({ userId, onClose, onMealLogged, preloadedImage, startInTextMode, onTakeAnother, onViewDashboard }: MealLoggerProps) {
+  const [step, setStep] = useState<Step>(preloadedImage ? 'analyzing' : startInTextMode ? 'text-input' : 'capture')
+  const [inputMode, setInputMode] = useState<InputMode>(startInTextMode ? 'text' : 'photo')
+  const [imagePreview, setImagePreview] = useState<string | null>(preloadedImage?.previewUrl || null)
   const [textDescription, setTextDescription] = useState('')
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [mealName, setMealName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const hasAnalyzedPreload = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-analyze when preloaded image is provided
+  useEffect(() => {
+    if (preloadedImage && !hasAnalyzedPreload.current) {
+      hasAnalyzedPreload.current = true
+      analyzeImage(preloadedImage.base64, preloadedImage.mimeType)
+    }
+  }, [preloadedImage])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -170,11 +189,13 @@ export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
     try {
       await createMeal(meal)
       setStep('success')
-      // Auto close after success animation
-      setTimeout(() => {
-        onMealLogged()
-        onClose()
-      }, 1500)
+      onMealLogged()
+      // Auto close after success animation (only when not launched from camera)
+      if (!onTakeAnother && !onViewDashboard) {
+        setTimeout(() => {
+          onClose()
+        }, 1500)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save meal')
       setStep('error')
@@ -507,6 +528,29 @@ export function MealLogger({ userId, onClose, onMealLogged }: MealLoggerProps) {
             </div>
             <span className="text-[#FAFAFA] text-xl font-semibold">Meal logged!</span>
             <span className="text-[#A1A1A1] text-sm">Great job tracking your nutrition</span>
+
+            {/* Post-save navigation (when launched from CameraView) */}
+            {(onTakeAnother || onViewDashboard) && (
+              <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
+                {onTakeAnother && (
+                  <button
+                    onClick={onTakeAnother}
+                    className="w-full py-4 btn-primary rounded-2xl flex items-center justify-center gap-2"
+                  >
+                    <Camera size={20} />
+                    Take Another Photo
+                  </button>
+                )}
+                {onViewDashboard && (
+                  <button
+                    onClick={onViewDashboard}
+                    className="w-full py-4 bg-[#262626] text-[#FAFAFA] rounded-2xl font-medium hover:bg-[#333] transition-colors"
+                  >
+                    View Dashboard
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

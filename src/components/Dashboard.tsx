@@ -14,9 +14,10 @@ interface DashboardProps {
   userEmail: string
   onSignOut: () => Promise<{ error: Error | null }>
   onProfileUpdated?: (profile: Profile) => void
+  onGoToCamera?: () => void
 }
 
-export function Dashboard({ profile, userEmail, onSignOut, onProfileUpdated }: DashboardProps) {
+export function Dashboard({ profile, userEmail, onSignOut, onProfileUpdated, onGoToCamera }: DashboardProps) {
   const [showMealLogger, setShowMealLogger] = useState(false)
   const [showWeightLogger, setShowWeightLogger] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -375,7 +376,7 @@ export function Dashboard({ profile, userEmail, onSignOut, onProfileUpdated }: D
       {/* Add meal FAB - only show for today */}
       {isToday() && (
         <button
-          onClick={() => setShowMealLogger(true)}
+          onClick={() => onGoToCamera ? onGoToCamera() : setShowMealLogger(true)}
           className="fixed bottom-6 right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-lg shadow-[#F97066]/20"
         >
           <Plus size={28} className="text-white" />
